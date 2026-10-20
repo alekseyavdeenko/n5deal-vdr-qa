@@ -1,3 +1,4 @@
+import { covers } from '../../src/annotations';
 import type { Page } from '@playwright/test';
 import { credentials, hasCredentials } from '../../src/config';
 import { expect, test } from '../../src/ui/fixtures';
@@ -9,7 +10,7 @@ test.describe('login @smoke', () => {
 
   const tokenInStorage = (page: Page) => page.evaluate(() => window.localStorage.getItem('dataroom_token'));
 
-  test('E2E-01 valid credentials land on the data room', async ({ anonPage }) => {
+  test('E2E-01 valid credentials land on the data room', covers('TC-01'), async ({ anonPage }) => {
     const { email, password } = credentials('owner');
     const login = new LoginPage(anonPage);
 
@@ -21,7 +22,7 @@ test.describe('login @smoke', () => {
     expect(await tokenInStorage(anonPage), 'session token is stored').toBeTruthy();
   });
 
-  test('E2E-02 a wrong password shows an error and keeps the user on the login page', async ({ anonPage }) => {
+  test('E2E-02 a wrong password shows an error and keeps the user on the login page', covers('TC-02'), async ({ anonPage }) => {
     const { email, password } = credentials('owner');
     const login = new LoginPage(anonPage);
 

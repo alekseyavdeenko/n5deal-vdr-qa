@@ -1,3 +1,4 @@
+import { knownBug } from '../../src/annotations';
 import { expect, test } from '../../src/ui/fixtures';
 import { ExplorerPage } from '../../src/ui/pages/explorer-page';
 
@@ -11,7 +12,7 @@ import { ExplorerPage } from '../../src/ui/pages/explorer-page';
 test.describe('sharing @known-bug', () => {
   test(
     'E2E-06 double click on "Create public link" creates exactly one active link',
-    { annotation: { type: 'issue', description: 'F-10' } },
+    knownBug('F-10', 'machine-speed double click creates two active links', 'TC-74'),
     async ({ ownerPage, ownerApi, testFolder }) => {
       test.fail(true, 'F-10: parallel create requests produce several active public links');
 

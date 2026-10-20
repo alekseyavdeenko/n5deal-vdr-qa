@@ -4,6 +4,13 @@
 
 Усього 68 автотестів у 14 файлах. Кожен тест має ID на початку назви, наприклад `FOL-03`. Ці самі ID вказані в [test-cases.uk.md](test-cases.uk.md) і [findings.uk.md](findings.uk.md).
 
+Зв'язок працює і в інший бік: у коді кожен тест показує, які тест-кейси (а для відомих багів — і який баг) він покриває. Ці номери видно під кожним тестом у HTML-звіті (`npm run report`):
+
+```ts
+test('FOL-03 folder names are unique among siblings…', covers('TC-12'), async (...) => { ... })
+test('BUG-02 double-creating a public link yields one active link', knownBug('F-10', '…', 'TC-74'), async (...) => { ... })
+```
+
 ## Де лежать тести і звідки беруться числа
 
 | Група | ID | Файл | Тестів |

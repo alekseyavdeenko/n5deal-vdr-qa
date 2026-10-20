@@ -1,9 +1,10 @@
+import { covers } from '../../src/annotations';
 import { errorMessage } from '../../src/api/client';
 import { credentials } from '../../src/config';
 import { expect, test } from '../../src/fixtures';
 
 test.describe('auth', () => {
-  test('AUTH-01 login rejects a wrong password and an unknown email with the same generic message', async ({ anonApi, ownerApi }) => {
+  test('AUTH-01 login rejects a wrong password and an unknown email with the same generic message', covers('TC-02'), async ({ anonApi, ownerApi }) => {
     void ownerApi; // only to apply the "owner credentials present" skip
     const { email } = credentials('owner');
     const wrongPassword = await anonApi.login({ email, password: 'definitely-wrong-password' });
@@ -20,7 +21,7 @@ test.describe('auth', () => {
     expect(me.body.email).toBe(credentials('owner').email.trim().toLowerCase());
   });
 
-  test('AUTH-03 a malformed or forged token is rejected', async ({ apiContext }) => {
+  test('AUTH-03 a malformed or forged token is rejected', covers('TC-03'), async ({ apiContext }) => {
     const { ApiClient } = await import('../../src/api/client');
     for (const token of ['not-a-jwt', 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.invalid-signature']) {
       const res = await new ApiClient(apiContext, token).me();
@@ -28,7 +29,7 @@ test.describe('auth', () => {
     }
   });
 
-  test('AUTH-04 registration validates input before creating anything', async ({ anonApi }) => {
+  test('AUTH-04 registration validates input before creating anything', covers('TC-04'), async ({ anonApi }) => {
     const cases = [
       { body: { name: 'QA', email: 'not-an-email', password: 'long-enough-1' }, field: 'email' },
       { body: { name: 'QA', email: `n5qa-${Date.now()}@example.invalid`, password: 'short' }, field: 'password' },
@@ -41,7 +42,7 @@ test.describe('auth', () => {
     }
   });
 
-  test('AUTH-05 registering an existing email is refused with 409', async ({ anonApi, ownerApi }) => {
+  test('AUTH-05 registering an existing email is refused with 409', covers('TC-05'), async ({ anonApi, ownerApi }) => {
     void ownerApi;
     const res = await anonApi.register({ name: 'Duplicate', email: credentials('owner').email.toUpperCase(), password: 'long-enough-1' });
     expect(res.status).toBe(409);

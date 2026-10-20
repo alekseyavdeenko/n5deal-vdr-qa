@@ -1,3 +1,4 @@
+import { covers } from '../../src/annotations';
 import { errorMessage } from '../../src/api/client';
 import type { ContentItem } from '../../src/api/types';
 import { makePdf } from '../../src/data/factory';
@@ -6,7 +7,7 @@ import { expect, test } from '../../src/fixtures';
 const MISSING_ID = '11111111-1111-4111-8111-111111111111';
 
 test.describe('folders', () => {
-  test('FOL-01 nested folders are listed with folders first, sorted case-insensitively', async ({ ownerApi, roomId, testFolder }) => {
+  test('FOL-01 nested folders are listed with folders first, sorted case-insensitively', covers('TC-10'), async ({ ownerApi, roomId, testFolder }) => {
     for (const name of ['beta', 'Alpha', 'gamma']) {
       expect((await ownerApi.createFolder({ name, dataRoomId: roomId, parentId: testFolder.id })).status).toBe(201);
     }
@@ -17,7 +18,7 @@ test.describe('folders', () => {
     expect(contents.body.items.map((i) => `${i.type}:${i.name}`)).toEqual(['folder:Alpha', 'folder:beta', 'folder:gamma', 'file:aaa.pdf']);
   });
 
-  test('FOL-02 breadcrumbs list every ancestor down to the current folder', async ({ ownerApi, roomId, testFolder }) => {
+  test('FOL-02 breadcrumbs list every ancestor down to the current folder', covers('TC-11'), async ({ ownerApi, roomId, testFolder }) => {
     const a = (await ownerApi.createFolder({ name: 'level-1', dataRoomId: roomId, parentId: testFolder.id })).body;
     const b = (await ownerApi.createFolder({ name: 'level-2', dataRoomId: roomId, parentId: a.id })).body;
 
@@ -28,7 +29,7 @@ test.describe('folders', () => {
     expect(crumbs.body.folders.slice(-3).map((f) => f.name)).toEqual([testFolder.name, 'level-1', 'level-2']);
   });
 
-  test('FOL-03 folder names are unique among siblings, ignoring case and surrounding spaces', async ({ ownerApi, roomId, testFolder }) => {
+  test('FOL-03 folder names are unique among siblings, ignoring case and surrounding spaces', covers('TC-12'), async ({ ownerApi, roomId, testFolder }) => {
     expect((await ownerApi.createFolder({ name: 'Due Diligence', dataRoomId: roomId, parentId: testFolder.id })).status).toBe(201);
     for (const name of ['Due Diligence', 'DUE DILIGENCE', '  due diligence  ']) {
       const dup = await ownerApi.createFolder({ name, dataRoomId: roomId, parentId: testFolder.id });
@@ -37,14 +38,14 @@ test.describe('folders', () => {
     }
   });
 
-  test('FOL-04 the same name is allowed in a different parent', async ({ ownerApi, roomId, testFolder }) => {
+  test('FOL-04 the same name is allowed in a different parent', covers('TC-13'), async ({ ownerApi, roomId, testFolder }) => {
     const left = (await ownerApi.createFolder({ name: 'left', dataRoomId: roomId, parentId: testFolder.id })).body;
     const right = (await ownerApi.createFolder({ name: 'right', dataRoomId: roomId, parentId: testFolder.id })).body;
     expect((await ownerApi.createFolder({ name: 'Contracts', dataRoomId: roomId, parentId: left.id })).status).toBe(201);
     expect((await ownerApi.createFolder({ name: 'Contracts', dataRoomId: roomId, parentId: right.id })).status).toBe(201);
   });
 
-  test('FOL-05 folder name validation: required, trimmed, max 200 characters', async ({ ownerApi, roomId, testFolder }) => {
+  test('FOL-05 folder name validation: required, trimmed, max 200 characters', covers('TC-14'), async ({ ownerApi, roomId, testFolder }) => {
     for (const name of ['', '   ']) {
       const res = await ownerApi.createFolder({ name, dataRoomId: roomId, parentId: testFolder.id });
       expect(res.status, JSON.stringify(name)).toBe(400);
@@ -57,7 +58,7 @@ test.describe('folders', () => {
     expect(trimmed.body.name).toBe('Tax');
   });
 
-  test('FOL-06 rename: new name is saved, sibling clash is 409, changing only the case of its own name is allowed', async ({ ownerApi, roomId, testFolder }) => {
+  test('FOL-06 rename: new name is saved, sibling clash is 409, changing only the case of its own name is allowed', covers('TC-18'), async ({ ownerApi, roomId, testFolder }) => {
     const alpha = (await ownerApi.createFolder({ name: 'alpha', dataRoomId: roomId, parentId: testFolder.id })).body;
     await ownerApi.createFolder({ name: 'beta', dataRoomId: roomId, parentId: testFolder.id });
 
@@ -67,7 +68,7 @@ test.describe('folders', () => {
     expect(caseOnly.body.name).toBe('ALPHA');
   });
 
-  test('FOL-07 delete preview counts the whole subtree, then delete removes it all', async ({ ownerApi, roomId, testFolder }) => {
+  test('FOL-07 delete preview counts the whole subtree, then delete removes it all', covers('TC-19', 'TC-20'), async ({ ownerApi, roomId, testFolder }) => {
     const top = (await ownerApi.createFolder({ name: 'to-delete', dataRoomId: roomId, parentId: testFolder.id })).body;
     const child = (await ownerApi.createFolder({ name: 'child', dataRoomId: roomId, parentId: top.id })).body;
     const grandchild = (await ownerApi.createFolder({ name: 'grandchild', dataRoomId: roomId, parentId: child.id })).body;
@@ -83,7 +84,7 @@ test.describe('folders', () => {
     for (const id of [f1.id, f2.id]) expect((await ownerApi.getFile(id)).status).toBe(404);
   });
 
-  test('FOL-08 keyset pagination returns every item exactly once', async ({ ownerApi, roomId, testFolder }) => {
+  test('FOL-08 keyset pagination returns every item exactly once', covers('TC-23'), async ({ ownerApi, roomId, testFolder }) => {
     const names = ['p1', 'p2', 'p3', 'p4', 'p5'];
     for (const name of names) await ownerApi.createFolder({ name, dataRoomId: roomId, parentId: testFolder.id });
     await ownerApi.uploadPdf({ dataRoomId: roomId, folderId: testFolder.id, name: 'p6.pdf', bytes: makePdf() });
@@ -101,7 +102,7 @@ test.describe('folders', () => {
     expect(seen.map((i) => i.name)).toEqual([...names, 'p6.pdf']);
   });
 
-  test('FOL-09 pagination parameters are validated', async ({ ownerApi, testFolder }) => {
+  test('FOL-09 pagination parameters are validated', covers('TC-24'), async ({ ownerApi, testFolder }) => {
     expect((await ownerApi.folderContents(testFolder.id, { limit: 0 })).status).toBe(400);
     expect((await ownerApi.folderContents(testFolder.id, { limit: 101 })).status).toBe(400);
     const badCursor = await ownerApi.folderContents(testFolder.id, { cursor: 'not-a-cursor' });

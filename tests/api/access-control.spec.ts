@@ -1,3 +1,4 @@
+import { covers } from '../../src/annotations';
 import type { ApiClient, ApiResult } from '../../src/api/client';
 import type { FileItem, Folder } from '../../src/api/types';
 import { makePdf } from '../../src/data/factory';
@@ -34,7 +35,7 @@ async function buildLayout(owner: ApiClient, roomId: string, parent: Folder, vie
 }
 
 test.describe('access control: USER share is read-only and scoped @security', () => {
-  test('ACC-01 viewer can read everything inside the shared folder', async ({ ownerApi, viewerApi, roomId, testFolder, viewerEmail }) => {
+  test('ACC-01 viewer can read everything inside the shared folder', covers('TC-50'), async ({ ownerApi, viewerApi, roomId, testFolder, viewerEmail }) => {
     const l = await buildLayout(ownerApi, roomId, testFolder, viewerEmail);
 
     expect((await viewerApi.folderContents(l.shared.id)).body.items.map((i) => i.name)).toEqual(['sub']);
@@ -47,7 +48,7 @@ test.describe('access control: USER share is read-only and scoped @security', ()
     expect(received.body.items).toContainEqual(expect.objectContaining({ shareId: l.shareId, resourceType: 'FOLDER', resourceName: 'shared' }));
   });
 
-  test('ACC-02 viewer breadcrumbs start at the shared folder and hide everything above it', async ({ ownerApi, viewerApi, roomId, testFolder, viewerEmail }) => {
+  test('ACC-02 viewer breadcrumbs start at the shared folder and hide everything above it', covers('TC-54'), async ({ ownerApi, viewerApi, roomId, testFolder, viewerEmail }) => {
     const l = await buildLayout(ownerApi, roomId, testFolder, viewerEmail);
     const crumbs = await viewerApi.breadcrumbs(l.sub.id);
     expect(crumbs.status).toBe(200);
@@ -55,7 +56,7 @@ test.describe('access control: USER share is read-only and scoped @security', ()
     expect(crumbs.body.folders.map((f) => f.name)).toEqual(['shared', 'sub']);
   });
 
-  test('ACC-03 viewer cannot change anything in the shared folder', async ({ ownerApi, viewerApi, roomId, testFolder, viewerEmail }) => {
+  test('ACC-03 viewer cannot change anything in the shared folder', covers('TC-52'), async ({ ownerApi, viewerApi, roomId, testFolder, viewerEmail }) => {
     const l = await buildLayout(ownerApi, roomId, testFolder, viewerEmail);
     const attempts: [string, () => Promise<ApiResult<unknown>>][] = [
       ['create subfolder', () => viewerApi.createFolder({ name: 'x', dataRoomId: roomId, parentId: l.shared.id })],
@@ -79,7 +80,7 @@ test.describe('access control: USER share is read-only and scoped @security', ()
     expect((await ownerApi.folderContents(l.shared.id)).body.items.map((i) => i.name)).toEqual(['sub']);
   });
 
-  test('ACC-04 viewer cannot reach anything outside the shared folder (no IDOR)', async ({ ownerApi, viewerApi, roomId, testFolder, viewerEmail }) => {
+  test('ACC-04 viewer cannot reach anything outside the shared folder (no IDOR)', covers('TC-53'), async ({ ownerApi, viewerApi, roomId, testFolder, viewerEmail }) => {
     const l = await buildLayout(ownerApi, roomId, testFolder, viewerEmail);
     const attempts: [string, () => Promise<ApiResult<unknown>>][] = [
       ['parent folder', () => viewerApi.folderContents(testFolder.id)],
@@ -104,14 +105,14 @@ test.describe('access control: USER share is read-only and scoped @security', ()
     expect((await viewerApi.folderContents(l.privateFolder.id)).status).toBe(404);
   });
 
-  test('ACC-06 access follows the file: moving it out of the shared folder removes access', async ({ ownerApi, viewerApi, roomId, testFolder, viewerEmail }) => {
+  test('ACC-06 access follows the file: moving it out of the shared folder removes access', covers('TC-57'), async ({ ownerApi, viewerApi, roomId, testFolder, viewerEmail }) => {
     const l = await buildLayout(ownerApi, roomId, testFolder, viewerEmail);
     expect((await viewerApi.getFile(l.contract.id)).status).toBe(200);
     expect((await ownerApi.moveFile(l.contract.id, l.privateFolder.id)).status).toBe(200);
     expect((await viewerApi.getFile(l.contract.id)).status).toBe(404);
   });
 
-  test('ACC-07 revoking the share removes access immediately and the item leaves "Shared with me"', async ({ ownerApi, viewerApi, roomId, testFolder, viewerEmail }) => {
+  test('ACC-07 revoking the share removes access immediately and the item leaves "Shared with me"', covers('TC-56'), async ({ ownerApi, viewerApi, roomId, testFolder, viewerEmail }) => {
     const l = await buildLayout(ownerApi, roomId, testFolder, viewerEmail);
     expect((await ownerApi.revokeShare(l.shareId)).status).toBe(204);
 
@@ -121,7 +122,7 @@ test.describe('access control: USER share is read-only and scoped @security', ()
     expect(received.body.items.map((s) => s.shareId)).not.toContain(l.shareId);
   });
 
-  test('ACC-08 sharing is idempotent and re-sharing after revoke works', async ({ ownerApi, viewerApi, roomId, testFolder, viewerEmail }) => {
+  test('ACC-08 sharing is idempotent and re-sharing after revoke works', covers('TC-58'), async ({ ownerApi, viewerApi, roomId, testFolder, viewerEmail }) => {
     const l = await buildLayout(ownerApi, roomId, testFolder, viewerEmail);
     const again = await ownerApi.shareUser('FOLDER', l.shared.id, `  ${viewerEmail.toUpperCase()} `);
     expect(again.status).toBe(201);
@@ -133,7 +134,7 @@ test.describe('access control: USER share is read-only and scoped @security', ()
     expect((await viewerApi.folderContents(l.shared.id)).status).toBe(200);
   });
 
-  test('ACC-09 owner sees who has access; invalid share requests are rejected', async ({ ownerApi, roomId, testFolder, viewerEmail }) => {
+  test('ACC-09 owner sees who has access; invalid share requests are rejected', covers('TC-59'), async ({ ownerApi, roomId, testFolder, viewerEmail }) => {
     const l = await buildLayout(ownerApi, roomId, testFolder, viewerEmail);
     const shares = await ownerApi.listShares('FOLDER', l.shared.id);
     expect(shares.body.items).toContainEqual(expect.objectContaining({ id: l.shareId, mode: 'USER', granteeEmail: viewerEmail, token: null }));

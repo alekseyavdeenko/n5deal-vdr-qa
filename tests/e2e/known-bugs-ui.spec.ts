@@ -1,3 +1,4 @@
+import { knownBug } from '../../src/annotations';
 import { credentials } from '../../src/config';
 import { makePdf } from '../../src/data/factory';
 import { expect, test } from '../../src/ui/fixtures';
@@ -11,7 +12,7 @@ import { LoginPage } from '../../src/ui/pages/login-page';
 test.describe('known UI bugs @known-bug', () => {
   test(
     'E2E-07 after login the user is taken to the page they opened by link',
-    { annotation: { type: 'issue', description: 'F-28: the link is lost after login' } },
+    knownBug('F-28', 'the link is lost after login', 'TC-112'),
     async ({ anonPage, testFolder }) => {
       test.fail(true, 'F-28: login always redirects to "/"');
       const { email, password } = credentials('owner');
@@ -26,7 +27,7 @@ test.describe('known UI bugs @known-bug', () => {
 
   test(
     'E2E-08 Retry finishes an upload whose last step failed because of a network error',
-    { annotation: { type: 'issue', description: 'F-22: Retry after a failed "complete" request never succeeds' } },
+    knownBug('F-22', 'Retry after a failed "complete" request never succeeds', 'TC-104'),
     async ({ ownerPage, testFolder }) => {
       test.fail(true, 'F-22: Retry re-uploads bytes that storage already has and gets 400 forever');
       const explorer = new ExplorerPage(ownerPage);

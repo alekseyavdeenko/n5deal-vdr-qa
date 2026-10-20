@@ -1,10 +1,11 @@
+import { covers } from '../../src/annotations';
 import { makePdf, uniqueName } from '../../src/data/factory';
 import { expect, test } from '../../src/ui/fixtures';
 import { ExplorerPage } from '../../src/ui/pages/explorer-page';
 import { PublicSharePage } from '../../src/ui/pages/public-share-page';
 
 test.describe('public link lifecycle', () => {
-  test('E2E-04 owner creates a link, an anonymous visitor opens it, revoking shuts it down', async ({ ownerPage, anonPage, ownerApi, roomId, testFolder }) => {
+  test('E2E-04 owner creates a link, an anonymous visitor opens it, revoking shuts it down', covers('TC-70', 'TC-75'), async ({ ownerPage, anonPage, ownerApi, roomId, testFolder }) => {
     const file = await ownerApi.uploadPdf({
       dataRoomId: roomId,
       folderId: testFolder.id,

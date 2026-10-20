@@ -4,6 +4,13 @@
 
 There are 68 automated tests in 14 files. Every test has an ID at the start of its name, for example `FOL-03`. The same ID is used in [test-cases.md](test-cases.md) and [findings.md](findings.md).
 
+The link also works the other way: in the code every test says which test cases (and, for known bugs, which bug) it covers. These ids show up under each test in the HTML report (`npm run report`):
+
+```ts
+test('FOL-03 folder names are unique among siblings…', covers('TC-12'), async (...) => { ... })
+test('BUG-02 double-creating a public link yields one active link', knownBug('F-10', '…', 'TC-74'), async (...) => { ... })
+```
+
 ## Where the tests are and where the numbers come from
 
 | Group | ID | File | Tests |
