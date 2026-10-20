@@ -141,8 +141,24 @@ I worked with Claude Code: Claude Opus as the main assistant, plus Claude Sonnet
 | Documents | Wrote the drafts | I reviewed them, asked for simpler language and set the final priorities |
 | Automation | Wrote the framework and the API tests; a helper wrote the browser tests | I ran every test on my machine, including the visible browser runs, and sent back the failures |
 
-**Where AI was wrong:**
-- **The task itself.** At first it read the product's original assignment (`task.md`) as something I had to *build*. The recruiter's message corrected this.
-- **Ideas from reading the code that were not real bugs.** For example, it suspected that an HTML page uploaded as a PDF would run as a web page, but storage returns it as plain text. Ideas like this were not put in the report.
-- **Priorities that were too high.** The first draft rated F-10, F-02 and F-15 as more serious than they are. They were lowered after re-checking how a real user would hit them.
-- **Tests that pass for the wrong reason.** A test marked "expected to fail" passes whenever it fails, for any reason. This is why the custom known-bug report was added.
+**Where AI was wrong, and how I caught it.** AI was fast and useful, but it made mistakes regularly. My rule: nothing goes into the report or the tests until it is checked on the live site, by a script, or by hand. Real examples from this assignment:
+
+- **Bugs that looked worse than they are.** The first draft overstated several bugs:
+  - F-15 said "other tabs keep showing data after sign-out". I asked what happens on refresh: the next click or a refresh goes to login, so the bug is small.
+  - F-16 ("Close leads nowhere") only happens after a page refresh or when the file is opened by a direct link.
+  - F-11 (duplicate folders) cannot be reproduced through the UI.
+  - F-19 (long names) is fine on a laptop and breaks only on a phone.
+
+  All were re-checked the way a real user would hit them and their priority was lowered.
+- **A "serious" bug that a human cannot reproduce.** The browser test for F-10 creates two public links with a machine-speed double-click. I double-clicked the button by hand, and the UI blocked the second click. So F-10 went from high to medium, and the test description now says it reproduces a race, not a normal user path.
+- **Bugs that were not bugs.**
+  - From the code, AI suspected that an HTML page uploaded as a PDF would run as a web page; on the live site storage serves it as plain text.
+  - Its first check of the upload panel found "no progress, only the word Uploading"; the code and a screenshot showed a real progress bar.
+
+  Neither went into the report.
+- **A test that tested nothing.** To check Retry after a network drop, AI first broke `fetch`, but the app sends requests with axios (XMLHttpRequest), so the "network drop" never happened. The run would have looked like "Retry works". A check that the drop really fired caught this. The second attempt found a real bug (F-22).
+- **Tests that pass for the wrong reason.** A test marked "expected to fail" stays green whenever it fails, for any reason, even a setup error. So I added a custom report that prints the exact assertion each known bug fails on.
+- **Numbers that did not add up.** AI wrote the test-case totals by eye (75 checks, while there were 68). Since then every total in the documents is counted by a script, and every test ID in the documents is checked against the real list of tests.
+- **Invented details.** In one API example AI wrote an id that was never seen in a real response. I replaced it with a placeholder: every request and answer in the report must be real.
+- **Fixing the symptom, not the cause.** The test run sometimes did not finish. The first fix (turning off trace files) only hid it. The real cause was Node 26, which Playwright does not support yet. Now the npm scripts run on Node 22 automatically, and the run finishes on its own.
+- **What AI could not check at all.** Real drag-and-drop from the computer, a human double-click, and signing up with someone else's invited email (F-21). I did these by hand.
