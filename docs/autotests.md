@@ -32,6 +32,8 @@ test('BUG-02 double-creating a public link yields one active link', knownBug('F-
 | `npm run test:api` | **60** | all tests without a browser: SMK + CON + AUTH + FOL + FIL + ACC + PUB + BUG |
 | `npm run test:api -- --grep @known-bug` | **15** | only BUG-01…BUG-15 |
 | `npm run test:e2e` | **8** | only E2E-01…E2E-08 |
+| `npm run test:smoke` | **6** | quick check: SMK-01…SMK-04 + E2E-01, E2E-02 |
+| `npm run test:known-bugs` | **18** | all known-bug tests: BUG-01…BUG-15 + E2E-06…E2E-08 |
 | `npm test -- -g "FOL-03"` | **1** | one test by its ID |
 
 Known bugs are tested by 18 tests in total: BUG-01…BUG-15 at API level, plus E2E-06…E2E-08 in the browser.
@@ -93,7 +95,7 @@ Known bugs are tested by 18 tests in total: BUG-01…BUG-15 at API level, plus E
 | ACC-01 | The second user can read everything inside the shared folder | TC-50 |
 | ACC-02 | Their breadcrumbs start at the shared folder | TC-54 |
 | ACC-03 | They cannot change anything (12 actions → 404) | TC-52 |
-| ACC-04 | They cannot open anything outside the share by changing the id (IDOR) | TC-53 |
+| ACC-04 | They cannot open anything outside the share by changing the id (the attack called IDOR) | TC-53 |
 | ACC-05 | Sharing one file gives access to that file only | — |
 | ACC-06 | Moving a file out of the shared folder takes away access | TC-57 |
 | ACC-07 | Revoke takes away access at once | TC-56 |
@@ -112,7 +114,7 @@ Known bugs are tested by 18 tests in total: BUG-01…BUG-15 at API level, plus E
 | PUB-07 | A link that does not exist gives 404 | TC-78 |
 
 ### BUG — known bugs (`tests/api/known-bugs.spec.ts`)
-Each test describes the *correct* behaviour, so today it fails on purpose. The run shows it as passed ("expected to fail"). When the bug is fixed, Playwright reports it.
+Each test describes the *correct* behaviour, so today it fails on purpose. The run shows it as passed ("expected to fail"). When the bug is fixed, Playwright reports it. BUG-01, BUG-02 and BUG-03 depend on requests colliding, so each sends 10 parallel requests and tries up to 3 times before it checks the result.
 
 | ID | What it checks (correct behaviour) | Bug | Covers |
 |---|---|---|---|
@@ -145,6 +147,8 @@ Each test describes the *correct* behaviour, so today it fails on purpose. The r
 | E2E-08 | `known-bugs-ui.spec.ts` | Retry finishes an upload whose last step failed because of a network drop (known bug) | F-22, TC-104 |
 
 ## The framework code (`src/`)
+In the code the second user is called `viewer` (`VIEWER_EMAIL`, `viewerApi`, `viewerPage`), the same as the product's test account `viewer@example.com`.
+
 | File | What it is |
 |---|---|
 | `src/api/client.ts` | One function per API endpoint, used by all API tests |

@@ -8,7 +8,7 @@
     "test:smoke": "node scripts/pw.mjs test --grep @smoke",
     "test:api": "node scripts/pw.mjs test --project=api",
     "test:e2e": "node scripts/pw.mjs test --project=e2e",
-    "test:e2e:headed": "SLOW_MO=400 node scripts/pw.mjs test --project=e2e --headed --workers=1",
+    "test:e2e:headed": "node scripts/pw.mjs test --project=e2e --headed --workers=1",
     "test:known-bugs": "node scripts/pw.mjs test --grep @known-bug",
     "install:browsers": "node scripts/pw.mjs install chromium",
     "report": "node scripts/pw.mjs show-report",

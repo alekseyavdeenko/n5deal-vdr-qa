@@ -1,8 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 import { config } from './src/config';
 
-const NODE_MAJOR = Number(process.versions.node.split('.')[0]);
-
 /**
  * Two projects on one runner:
  *  - api: request-level tests (functional, access control, public links, contract) - the wide base of the pyramid
@@ -40,8 +38,7 @@ export default defineConfig({
         // SLOW_MO=400 slows every action down so a human can follow a headed run.
         launchOptions: { slowMo: Number(process.env.SLOW_MO ?? 0) },
         baseURL: config.webUrl,
-        // Trace archives hang on Node 25+ (zip handling); scripts/pw.mjs runs Playwright on Node 22 there.
-        trace: NODE_MAJOR > 24 ? 'off' : 'retain-on-failure',
+        trace: 'retain-on-failure',
         screenshot: 'only-on-failure',
         video: 'retain-on-failure',
       },

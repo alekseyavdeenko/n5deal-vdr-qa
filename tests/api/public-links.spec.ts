@@ -42,7 +42,7 @@ test.describe('public links @security', () => {
     expect(Buffer.from(await pdf.arrayBuffer()).subarray(0, 5).toString()).toBe('%PDF-');
   });
 
-  test('PUB-02 a link cannot be used to step outside the shared folder', covers('TC-71'), async ({ ownerApi, anonApi, roomId, testFolder }) => {
+  test('PUB-02 a link cannot be used to step outside the shared folder', covers('TC-71'), async ({ ownerApi, anonApi, testFolder }) => {
     const token = (await ownerApi.sharePublic('FOLDER', deal.id)).body.token!;
     const escapes: [string, number][] = [
       ['parent folder', (await anonApi.publicFolderContents(token, testFolder.id)).status],
@@ -53,7 +53,6 @@ test.describe('public links @security', () => {
       ['room root via folder link', (await anonApi.publicRoomContents(token)).status],
     ];
     for (const [label, status] of escapes) expect(status, label).toBe(404);
-    void roomId;
   });
 
   test('PUB-03 a file link opens that file and nothing else', covers('TC-72'), async ({ ownerApi, anonApi }) => {

@@ -8,7 +8,7 @@ I tested the live version (commit `9c85149`) on 2026-10-20, in two rounds. The s
 |---|---|
 | Site | https://virtual-data-room-ten.vercel.app |
 | API | https://virtual-data-room-production.up.railway.app |
-| Accounts used | the owner `john@example.com`, the second user `viewer@example.com`, and one new account I registered for F-21 |
+| Accounts used | the owner `john@example.com`, the second user `viewer@example.com`, and one new account I registered for F-21 (`cfo.n5qa6468@example.com`; it still exists, because the product cannot delete accounts, and it also holds the two data rooms from the F-25 check) |
 
 **How to read the scales:**
 - **Severity** is how much damage the bug does: Critical, High, Medium, Low.
@@ -49,7 +49,7 @@ In "How to reproduce" the first word says where the bug happens: **UI** means an
 |---|---|---|---|
 | F-11 | 5–10 requests at the same moment to create folder "X" create 5–10 folders "X" | **API**<br>1. Send `POST /folders` with the same name and parent 5 times at the same moment.<br>2. All answer 201 → 5 identical folders.<br>(In the UI a double-click on "Create" makes only one.) | ✅ BUG-03 |
 | F-12 | An upload that never finished still "holds" its name. The next `ghost.pdf` becomes `ghost (1).pdf` in a folder that looks empty | **UI**<br>1. Start uploading a big PDF (e.g. 40 MB) and close the tab before it finishes.<br>2. Open the folder again → the file is not there.<br>3. Upload the same file again → it is called `name (1).pdf`. | ✅ BUG-04 |
-| F-13 | Unknown fields in a request are ignored instead of rejected. A typo `targetFolderID` silently moves the file to the top level of the room | **API**<br>1. `PATCH /files/{id}/move` with `{"targetFolderID": "<folder id>"}` (capital "D", a typo).<br>2. Answer 200 → the file is now at the top of the room, not in that folder. | ✅ BUG-05 |
+| F-13 | Unknown fields in a request are ignored instead of rejected. A typo `targetFolderID` silently moves the file to the top level of the room; a typo `parentID` when creating a folder puts the folder at the top level | **API**<br>1. `PATCH /files/{id}/move` with `{"targetFolderID": "<folder id>"}` (capital "D", a typo).<br>2. Answer 200 → the file is now at the top of the room, not in that folder.<br>3. Same with `POST /folders` and `parentID` → the folder is created at the top level. | ✅ BUG-05 |
 | F-14 | Three cases return a server error (500) instead of a normal error: a NUL character in a name, deleting the same file twice at the same moment, and "complete upload" before the file was uploaded | **API**<br>1. `POST /folders` with the name `"a\u0000b"` → 500.<br>2. Send `DELETE /files/{id}` 3 times at the same moment → 204, 500, 500.<br>3. `POST /files/upload-intent`, then `POST /files/{id}/complete` without uploading → 500. | ✅ BUG-06, BUG-07, BUG-08 |
 | F-04 | The API lets you rename `report.pdf` to `report.exe` or remove the extension. The UI does not allow it | **API**<br>1. `PATCH /files/{id}` with `{"name": "report.exe"}`.<br>2. Answer 200 → the file is now called `report.exe`. | ✅ BUG-12 |
 | F-05 | The owner can share a folder with their own email. It then appears in their own "Shared with me" | **UI**<br>1. Open Share for your own folder.<br>2. Type your own email → Share → "Shared with you@…".<br>3. Open "Shared with me" → your own folder is there. | ✅ BUG-13 |
@@ -67,19 +67,19 @@ In "How to reproduce" the first word says where the bug happens: **UI** means an
 | F-24 | Folders can be nested only 72 levels deep. Level 73 fails with a server error (500) instead of a clear message | **API** (or UI, folder inside folder)<br>1. Create folders one inside another.<br>2. Level 73 → 500 "Internal server error". | no |
 | F-25 | Data rooms: the API accepts a room name made only of spaces (saved as an empty name) and allows several rooms, but the UI shows only the first room. "My data rooms" opens just that one; other rooms open only by direct address; rooms cannot be renamed | **API + UI**<br>1. `POST /data-rooms {"name": "   "}` → 201, name `""`.<br>2. `POST /data-rooms {"name": "Project Phoenix"}` → 201.<br>3. UI: "My data rooms" shows only "My Data Room"; the other two open only by `/room/<id>`. | no |
 | F-26 | Inside a public link there is no path. Deep in the folders the visitor does not see where they are, and "Back" jumps to the top, not one level up | **UI**<br>1. Share a folder with subfolders by public link.<br>2. Open the link and go 3 levels deep.<br>3. No path and no folder name; "Back to <top folder>" returns to the top. | no |
-| F-27 | Missing security headers: any site can show the data room inside a frame (no `X-Frame-Options` / CSP), which allows clickjacking; the API tells everyone it runs "Express" | **API**<br>1. `curl -I https://virtual-data-room-ten.vercel.app` → no `X-Frame-Options`, no `Content-Security-Policy`.<br>2. `curl -I …railway.app/health` → `X-Powered-By: Express`. | ✅ BUG-15 |
+| F-27 | Missing security headers: any site can show the data room inside a frame (no `X-Frame-Options` / CSP), which allows clickjacking (tricking a user into clicking buttons of the data room hidden under another page); the API tells everyone it runs "Express" | **API**<br>1. `curl -I https://virtual-data-room-ten.vercel.app` → no `X-Frame-Options`, no `Content-Security-Policy`.<br>2. `curl -I …railway.app/health` → `X-Powered-By: Express`. | ✅ BUG-15 |
 | F-28 | After logging in you always land on the home page, not on the link you opened | **UI**<br>1. While logged out, open a link to a folder.<br>2. You get the login page; log in.<br>3. You are on the home page, not in that folder. | ✅ E2E-07 |
 
 ### Design risks (not bugs, but need a decision)
 | ID | Risk |
 |---|---|
-| R-02 | A file link that a viewer already opened keeps working for up to 5 minutes after access is revoked |
-| R-03 | The login token is valid for 7 days and is kept in the browser's localStorage. "Sign out" does not cancel it on the server. If the token is stolen, it works for a week |
-| R-04 | There is no limit on login or sign-up attempts, so passwords can be guessed by brute force. Sign-up also says "email already exists", so anyone can check which emails have accounts. Found in the code; I did not attack the live site |
+| R-01 | A file link that a viewer already opened keeps working for up to 5 minutes after access is revoked |
+| R-02 | The login token is valid for 7 days and is kept in the browser's localStorage. "Sign out" does not cancel it on the server. If the token is stolen, it works for a week |
+| R-03 | There is no limit on login or sign-up attempts, so passwords can be guessed by brute force. Sign-up also says "email already exists", so anyone can check which emails have accounts. Found in the code; I did not attack the live site |
 
 ## What works well
 All of this was checked, and most of it is covered by automated tests.
-- **The viewer cannot change anything.** All 12 ways to change data return 404. The viewer also cannot open the owner's other folders and files by changing the id in the address (IDOR).
+- **The viewer cannot change anything.** All 12 ways to change data return 404. The viewer also cannot open the owner's other folders and files by changing the id in the address (this attack is called IDOR).
 - **A public link shows only what was shared.** You cannot reach the parent folder, sibling folders or other files with it.
 - **Revoke works at once.** The link says "This link has been revoked". If the viewer has the folder open, their next click shows "you don't have access".
 - **Folders:**
@@ -100,7 +100,7 @@ All of this was checked, and most of it is covered by automated tests.
 - **Fixed regressions from the product README:**
   - Enter on a Download button only downloads;
   - after sign-out and a new login, the previous user's data is not shown.
-- **CORS:** other sites cannot call the API.
+- **CORS:** other websites cannot call the API from a user's browser.
 - **Security basics:**
   - HTML in names is shown as text, not run;
   - login gives the same message for a wrong password and an unknown email.
@@ -131,7 +131,7 @@ All of this was checked, and most of it is covered by automated tests.
 **Expected:** the server checks that the file really is a PDF (it starts with `%PDF-`) and checks its real size.
 
 **Actual:**
-- The file is saved and shown as a PDF. Viewers get "Failed to load PDF document".
+- The file is saved and shown as a PDF. Opening it shows Chrome's standard "Failed to load PDF document" dialog (in the screenshot it is in Ukrainian, the browser's language). The file in the screenshot was also renamed to `../../etc/passwd` during the name tests: such path-like names are accepted as they are, which is harmless because files are stored under ids, but looks odd.
 - With the API you can also say "the file is 10 bytes" and then upload a bigger one. It is saved with its real size, so the 50 MB limit does not protect anything.
 
 **Why it matters:**
@@ -139,6 +139,8 @@ All of this was checked, and most of it is covered by automated tests.
 - Since anyone can sign up (see F-21), anyone can also fill the storage with big files.
 
 ### F-10 — Two public links for one folder; Revoke closes only one
+The Share window shows one link. At that moment 6 links for this folder were active (see "API proof" below):
+
 ![F-10](evidence/F-10-share-dialog-shows-one-of-six-active-links.jpg)
 
 **Steps:** send two "create public link" requests for the same folder at the same moment (an automated double-click, or a script). Then click "Revoke public link" in the Share window.
@@ -234,7 +236,7 @@ All of this was checked, and most of it is covered by automated tests.
 
 ![F-23](evidence/F-23-someone-elses-room-called-my-data-room.jpg)
 
-**F-26 — 3 levels deep in a public link: no path, and Back goes to the top:**
+**F-26 — inside a public link (this page is 3 levels deep) there is no path and no folder name, and Back goes to the top:**
 
 ![F-26](evidence/F-26-public-view-no-path-back-to-top.jpg)
 
@@ -276,6 +278,13 @@ GET /folders/{random id}/contents        → 404 {"message":"Folder not found"}
 **F-04 — the API allows another extension:**
 ```
 PATCH /files/{id} {"name":"report.exe"}   → 200 {"name":"report.exe", "mimeType":"application/pdf"}
+```
+
+**F-10 — several public links for one folder:**
+```
+POST /shares {"resourceType":"FOLDER","mode":"PUBLIC_LINK", ...}  x6 at the same moment → 201 x6, 6 different tokens
+GET  /shares?resourceType=FOLDER&resourceId=…&mode=PUBLIC_LINK   → 6 active links
+UI: Share → "Revoke public link", then GET again                 → 5 active links
 ```
 
 **F-24 — folders 73 levels deep:**
@@ -323,6 +332,6 @@ GET /public/{token}   (no login)
 
 ![progress](evidence/OK-per-file-upload-progress.jpg)
 
-**Real drag-and-drop from Finder: the two PDFs are uploaded, the .txt file is refused:**
+**Real drag-and-drop from Finder (two PDFs and one .txt): the two PDFs are uploaded, the .txt file did not get in:**
 
 ![drag and drop](evidence/OK-drag-and-drop-by-hand.jpg)

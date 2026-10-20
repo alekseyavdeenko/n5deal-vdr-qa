@@ -1,4 +1,4 @@
-import { knownBug } from '../../src/annotations';
+import { BUG_CHECK, knownBug } from '../../src/annotations';
 import { credentials } from '../../src/config';
 import { makePdf } from '../../src/data/factory';
 import { expect, test } from '../../src/ui/fixtures';
@@ -21,7 +21,7 @@ test.describe('known UI bugs @known-bug', () => {
       await expect(anonPage).toHaveURL(/\/login/);
       await new LoginPage(anonPage).signIn(email, password);
 
-      await expect(anonPage).toHaveURL(new RegExp(`/folder/${testFolder.id}`), { timeout: 10_000 });
+      await expect(anonPage, BUG_CHECK).toHaveURL(new RegExp(`/folder/${testFolder.id}`), { timeout: 10_000 });
     },
   );
 
@@ -41,7 +41,7 @@ test.describe('known UI bugs @known-bug', () => {
       await expect(row.getByText('Error', { exact: true })).toBeVisible();
       await row.getByRole('button', { name: 'Retry upload of retry.pdf' }).click();
 
-      await expect(row.getByText('Done', { exact: true })).toBeVisible({ timeout: 15_000 });
+      await expect(row.getByText('Done', { exact: true }), `${BUG_CHECK}: upload finished after Retry`).toBeVisible({ timeout: 15_000 });
     },
   );
 });

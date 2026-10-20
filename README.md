@@ -27,7 +27,7 @@ This is my test assignment for N5Deal. I tested an existing product, the [Virtua
   - 68 automated tests.
 
 ## 1. How I tested
-1. **I started with the code.** The product is open source, so in the first hour I read the API documentation (32 endpoints), the access rules in the code and the existing tests. That gave me a list of places that might be broken. A place went into the bug report only after I reproduced it on the live site.
+1. **I started with the code.** The product is open source, so in the first hour I read the API documentation (33 API operations on 28 paths), the access rules in the code and the existing tests. That gave me a list of places that might be broken. A place went into the bug report only after I reproduced it on the live site.
 2. **I tested by hand, area by area:**
    - names and folders;
    - upload;
@@ -38,9 +38,9 @@ This is my test assignment for N5Deal. I tested an existing product, the [Virtua
 
    The owner and the second user were logged in at the same time in two browsers, so I could revoke access while the other person was looking at the folder.
 3. **I checked how a real user would hit each bug.** Some bugs only happen through the API, or after a page refresh. Those got a lower priority. For example, the "two public links" bug (F-10) looked very serious at first, but a normal double-click by hand is blocked by the interface, so it went down to medium.
-4. **I automated the most important checks.** Every confirmed bug also got its own test.
+4. **I automated the most important checks.** 14 of the 28 bugs also got their own test: all 5 medium-priority bugs and 9 low ones. The high-priority F-21 cannot be automated on the shared site (it would create a new account on every run); the other low ones are checked by hand. See the Autotest column in findings.
 
-The site is a shared production that other candidates use too. So I did no load testing and never changed other people's data. All my test data lived in my own folders, which I deleted at the end.
+The site is a shared production that other candidates use too. So I did no load testing and never changed other people's data. My test data lived in my own folders, and I deleted them at the end. Two things could not be cleaned up, because the product has no way to delete them: the extra account I registered to prove F-21 (`cfo.n5qa6468@example.com`, display name "Hacker"), and the two extra data rooms that account holds from the F-25 check. The whole-room share used for TC-105 was revoked right after the check.
 
 ## 2. Automated tests
 
@@ -60,14 +60,14 @@ The site is a shared production that other candidates use too. So I did no load 
 ```
 
 **Main ideas:**
-- **Most tests are API tests.** All access rules live in the API, and API tests are fast and stable. Browser tests check only what you can see only in the UI.
+- **Most tests are API tests.** All access rules live in the API, and API tests are fast and stable. Browser tests check only what can be seen in the UI.
 - **Every API answer is checked against the API documentation.** If the API returns something the documentation does not describe, the test fails. A separate test warns when the live documentation changes.
 - **Safe on a shared site:**
   - each run creates its own folder `n5qa-<date>-<code>`;
   - each test works in its own subfolder;
   - everything is deleted at the end;
   - folders left by a crashed run are removed after 2 hours.
-- **Known bugs are tests too.** Each one describes the *correct* behaviour and is marked "expected to fail", so the run stays green. When a fix ships, Playwright reports "expected to fail but passed". A small custom report prints why each known bug still fails, so we know it fails for the right reason, for example `F-10: Expected 1 link, received 3`.
+- **Known bugs are tests too.** Each one describes the *correct* behaviour and is marked "expected to fail", so the run stays green. When a fix ships, Playwright reports "expected to fail but passed". A small custom report prints why each known bug still fails, for example `F-10: Expected 1 link, received 3`. It only says "still reproduces" when the test failed on the check of the bug itself; if a test breaks for another reason (setup, network), it says "FAILED FOR ANOTHER REASON".
 - **No passwords in the code.** They are read from `.env` or GitHub secrets. Tests that need a login are skipped when there is no `.env`.
 
 ### What a run looks like
@@ -125,7 +125,7 @@ npm run report              # HTML report
 ```
 
 **Notes:**
-- Playwright 1.56 supports Node 18–24. If your Node is newer (for example 26), the npm scripts run Playwright on Node 22 automatically through `scripts/pw.mjs`, so nothing hangs and nothing needs to be installed. On Node 26, do not call `npx playwright` directly: browser install, trace files and the end of the run hang there.
+- Playwright 1.56 supports Node 18–24. If your Node is newer (for example 26), the npm scripts run Playwright on Node 22 automatically through `scripts/pw.mjs`, so nothing hangs. Node 22 is downloaded once by npx; nothing is installed system-wide. On Node 26, do not call `npx playwright` directly: browser install, trace files and the end of the run hang there.
 - Browser tests use Playwright's own Chromium. `PW_CHANNEL=chrome` switches to your installed Google Chrome.
 - **CI** (`.github/workflows/qa.yml`) runs in three steps: smoke + contract → API → browser. It runs on every push and every night. The test accounts are stored as GitHub secrets.
 
@@ -162,7 +162,7 @@ AI was fast and useful, but it made mistakes regularly. My rule was simple: noth
 
 **3. Tests that did not test anything**
 - **The "internet drop" that never happened.** To test the Retry button after a connection drop, AI first simulated the drop the wrong way: it broke one browser function, but the app sends its requests through another one (axios / XMLHttpRequest). So there was no drop at all, and the result looked like "Retry works". I made it check that the drop really happened. On the second try it did, and Retry turned out to be broken for real. That is bug F-22.
-- **"Expected to fail" tests that are always green.** A test for a known bug is marked "expected to fail". It stays green whenever it fails, for any reason, even because of a mistake in the test itself. So I added a short report that shows exactly why each known bug fails, for example "Expected 1 link, received 3". This way we can see the test fails because of the bug and not because of something else.
+- **"Expected to fail" tests that are always green.** A test for a known bug is marked "expected to fail". It stays green whenever it fails, for any reason, even because of a mistake in the test itself. So I added a short report that shows exactly why each known bug fails, for example "Expected 1 link, received 3". The report says "still reproduces" only when the test failed on the check of the bug itself, and "FAILED FOR ANOTHER REASON" otherwise. This way we can see the test fails because of the bug and not because of something else.
 
 **4. Wrong numbers and invented details**
 - **Totals counted by eye.** AI wrote "75 checks" in the test-case summary, while there were 68. Since then every number in the documents is counted by a script, and every test ID in the documents is checked against the real list of tests.

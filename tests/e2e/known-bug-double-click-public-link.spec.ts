@@ -1,4 +1,4 @@
-import { knownBug } from '../../src/annotations';
+import { BUG_CHECK, knownBug } from '../../src/annotations';
 import { expect, test } from '../../src/ui/fixtures';
 import { ExplorerPage } from '../../src/ui/pages/explorer-page';
 
@@ -24,7 +24,7 @@ test.describe('sharing @known-bug', () => {
       const shares = await ownerApi.listShares('FOLDER', testFolder.id, 'PUBLIC_LINK');
       expect(shares.status).toBe(200);
       const active = shares.body.items.filter((share) => share.revokedAt === null);
-      expect(active, 'active public links of the folder').toHaveLength(1);
+      expect(active, `${BUG_CHECK}: active public links of the folder`).toHaveLength(1);
     },
   );
 });

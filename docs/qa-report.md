@@ -37,14 +37,13 @@ These are days of work, not weeks. Each fix already has an automated test that w
 | Folders: create, nest, rename, delete, breadcrumbs, pages | Deep | ✅ except F-11 (API only) |
 | Files: view, download, rename, move, delete | Medium | ✅ |
 | Special characters, errors, unknown fields | Medium | ⚠️ F-03, F-13, F-14 |
-| Login and session | Medium | ⚠️ F-15, R-03, R-04 |
+| Login and session | Medium | ⚠️ F-15, R-02, R-03 |
 | Look and feel | Light | ⚠️ small: F-18, F-19, F-20 |
 
 **How:**
 - First I read the code and the API docs.
 - Then I tested by hand in six sessions, with the owner and the second user logged in at the same time.
-- For every bug I checked whether a normal user can hit it in the UI, or only through the API. This lowered the priority of 9 bugs.
-
+- For every bug I checked whether a normal user can hit it in the UI, or only through the API. This lowered the priority of 9 bugs: F-01, F-02, F-10, F-11, F-12, F-13, F-14, F-15 and F-16.
 - A second round closed the gaps of the first: real drag-and-drop by hand, progress bars on big files, the Move and Rename dialogs, sharing a whole room, links after login, regressions named in the product README. It found 7 more bugs (F-22…F-28), all medium or low.
 
 Details: [test-plan.md](test-plan.md), [test-cases.md](test-cases.md) (85 checks), [findings.md](findings.md).
@@ -66,7 +65,7 @@ They come from a few common causes:
    - it ignores unknown fields.
 3. **Duplicates when two requests come at once** (F-01, F-10, F-11). The database has no rule that names or links must be unique, so the check fails under load. One fix (unique rules in the database) closes all three.
 4. **Names are not cleaned** (F-03): invisible and direction-flipping characters are allowed.
-5. **Session** (F-15, R-03, R-04):
+5. **Session** (F-15, R-02, R-03):
    - the token lives 7 days and cannot be cancelled;
    - other tabs still show data after sign-out;
    - there is no limit on login attempts.
@@ -87,7 +86,7 @@ They come from a few common causes:
 - **F-21:** the test would need to create new accounts on the shared production on every run;
 - **drag and drop:** the same upload is tested through the file picker;
 - **sharing a whole room:** on the shared demo account it would give the second user access to other people's data;
-- **F-15, F-16, F-23, F-24, F-25, F-26:** small UI issues, or tests that would leave data that cannot be deleted (rooms) on the shared production.
+- **13 low-priority bugs are checked by hand only** (F-06, F-07, F-08, F-09, F-15, F-16, F-18, F-19, F-20, F-23, F-24, F-25, F-26): small UI issues, or tests that would leave data that cannot be deleted (rooms) on the shared production.
 
 **About the framework:**
 - it is safe for a shared site: own folder per run, deleted at the end;
@@ -105,7 +104,7 @@ They come from a few common causes:
    - login attempt limits;
    - storage settings (size and type limits);
    - security headers.
-4. **Large data:** the product says one room can hold 100 000 files. Test the list speed, delete speed and very deep folders.
+4. **Large data:** the product README says it is designed for 100,000 files per room. Test the list speed, delete speed and very deep folders.
 5. **More browser tests:**
    - real drag and drop;
    - upload retry after an error;

@@ -6,3 +6,4 @@ playwright-report/
 _internal/
 .cache/
 blob-report/
+.DS_Store

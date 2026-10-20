@@ -35,10 +35,10 @@ A data room has one main job: only the right people see the documents, and the o
 - **Accessibility:** no time in 24 h.
 
 ## 3. How I test
-1. **First I read the code and the API docs** (about 1 hour). The product is open source, so I listed all 32 API endpoints, the access rules and the existing tests. This gave me a list of places that *might* be broken. Nothing goes into the bug report until I reproduce it on the live site.
+1. **First I read the code and the API docs** (about 1 hour). The product is open source, so I listed all 33 API operations (28 paths), the access rules and the existing tests. This gave me a list of places that *might* be broken. Nothing goes into the bug report until I reproduce it on the live site.
 2. **Then I test by hand, area by area** (the list is below). The owner and the second user are logged in at the same time in two browsers, so I can see what the other person sees.
 3. **For every bug I check how a real user would hit it.** Some bugs only happen through the API, or only after a refresh. Then I give them a lower priority. For example, F-10 went from High to Medium after I tried a normal double-click by hand.
-4. **I automate the most important checks**, plus a test for every confirmed bug.
+4. **I automate the most important checks**, plus a test for every confirmed bug that can be automated safely on the shared site.
 
 ## 4. Risk areas
 For each area I estimate two things:
@@ -77,7 +77,7 @@ The result of every check is in [test-cases.md](test-cases.md), and the bugs are
          /  \       upload → view, public link → revoke, read-only view, login
         /----\
        / API  \     API tests (most)         - all rules: folders, files, access,
-      / tests  \                               links, + one test per confirmed bug
+      / tests  \                               links, + tests for confirmed bugs
      /----------\
     /  contract  \   every API answer is compared with the official API description
    /--------------\
@@ -86,8 +86,8 @@ The result of every check is in [test-cases.md](test-cases.md), and the bugs are
 ```
 
 - **Most tests are API tests.** All access rules live in the API, and API tests are fast and stable.
-- **Few browser tests:** only what you can see only in the UI, for example hidden buttons and the revoked page.
-- **A test for every known bug.** It describes the *correct* behaviour and is marked "expected to fail". When the developers fix the bug, the test reports it.
+- **Few browser tests:** only what can be seen in the UI, for example hidden buttons and the revoked page.
+- **Known bugs become tests where possible.** Such a test describes the *correct* behaviour and is marked "expected to fail". When the developers fix the bug, the test reports it.
 - **Safe for the shared site.** Each run creates its own folder and deletes it at the end. It never touches other people's data.
 
 ## 7. When to start and when testing is done

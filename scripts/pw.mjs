@@ -11,5 +11,7 @@ if (!supported) {
   console.warn(`[qa] Node ${process.versions.node} is not supported by Playwright yet - running on Node 22 instead.`);
 }
 const npxArgs = supported ? ['playwright', ...args] : ['-y', '-p', 'node@22', '--', 'playwright', ...args];
-const result = spawnSync('npx', npxArgs, { stdio: 'inherit', shell: process.platform === 'win32' });
+// A headed run is for watching: slow every action down unless SLOW_MO is set explicitly.
+const env = args.includes('--headed') ? { SLOW_MO: '400', ...process.env } : process.env;
+const result = spawnSync('npx', npxArgs, { stdio: 'inherit', env, shell: process.platform === 'win32' });
 process.exit(result.status ?? 1);

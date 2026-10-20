@@ -1,6 +1,6 @@
 import { covers } from '../../src/annotations';
 import type { ApiClient, ApiResult } from '../../src/api/client';
-import type { FileItem, Folder } from '../../src/api/types';
+import type { FileItem, Folder, ReceivedShare } from '../../src/api/types';
 import { makePdf } from '../../src/data/factory';
 import { expect, test } from '../../src/fixtures';
 
@@ -22,6 +22,22 @@ interface Layout {
   shareId: string;
 }
 
+/** USER shares this worker created; revoked after each test so the shared viewer account does not pile up shares. */
+const createdShares: string[] = [];
+
+/** Every item in the viewer's "Shared with me", following nextCursor (the account is shared with other testers). */
+async function allReceivedShares(viewer: ApiClient): Promise<ReceivedShare[]> {
+  const items: ReceivedShare[] = [];
+  let cursor: string | undefined;
+  for (let page = 0; page < 50; page += 1) {
+    const res = await viewer.receivedShares({ limit: 100, cursor });
+    items.push(...res.body.items);
+    if (!res.body.nextCursor) break;
+    cursor = res.body.nextCursor;
+  }
+  return items;
+}
+
 async function buildLayout(owner: ApiClient, roomId: string, parent: Folder, viewerEmail: string): Promise<Layout> {
   const folder = async (name: string, parentId: string) => (await owner.createFolder({ name, dataRoomId: roomId, parentId })).body;
   const shared = await folder('shared', parent.id);
@@ -31,10 +47,15 @@ async function buildLayout(owner: ApiClient, roomId: string, parent: Folder, vie
   const secret = await owner.uploadPdf({ dataRoomId: roomId, folderId: privateFolder.id, name: 'secret.pdf', bytes: makePdf('secret') });
   const share = await owner.shareUser('FOLDER', shared.id, viewerEmail);
   expect(share.status).toBe(201);
+  createdShares.push(share.body.id);
   return { shared, sub, contract, privateFolder, secret, shareId: share.body.id };
 }
 
 test.describe('access control: USER share is read-only and scoped @security', () => {
+  test.afterEach(async ({ ownerApi }) => {
+    for (const id of createdShares.splice(0)) await ownerApi.revokeShare(id);
+  });
+
   test('ACC-01 viewer can read everything inside the shared folder', covers('TC-50'), async ({ ownerApi, viewerApi, roomId, testFolder, viewerEmail }) => {
     const l = await buildLayout(ownerApi, roomId, testFolder, viewerEmail);
 
@@ -44,8 +65,7 @@ test.describe('access control: USER share is read-only and scoped @security', ()
     expect((await viewerApi.viewUrl(l.contract.id)).status).toBe(200);
     expect((await viewerApi.downloadUrl(l.contract.id)).status).toBe(200);
 
-    const received = await viewerApi.receivedShares({ limit: 100 });
-    expect(received.body.items).toContainEqual(expect.objectContaining({ shareId: l.shareId, resourceType: 'FOLDER', resourceName: 'shared' }));
+    expect(await allReceivedShares(viewerApi)).toContainEqual(expect.objectContaining({ shareId: l.shareId, resourceType: 'FOLDER', resourceName: 'shared' }));
   });
 
   test('ACC-02 viewer breadcrumbs start at the shared folder and hide everything above it', covers('TC-54'), async ({ ownerApi, viewerApi, roomId, testFolder, viewerEmail }) => {
@@ -98,7 +118,9 @@ test.describe('access control: USER share is read-only and scoped @security', ()
 
   test('ACC-05 a single-file share gives access to that file only', async ({ ownerApi, viewerApi, roomId, testFolder, viewerEmail }) => {
     const l = await buildLayout(ownerApi, roomId, testFolder, viewerEmail);
-    expect((await ownerApi.shareUser('FILE', l.secret.id, viewerEmail)).status).toBe(201);
+    const fileShare = await ownerApi.shareUser('FILE', l.secret.id, viewerEmail);
+    expect(fileShare.status).toBe(201);
+    createdShares.push(fileShare.body.id);
 
     expect((await viewerApi.getFile(l.secret.id)).status).toBe(200);
     expect((await viewerApi.viewUrl(l.secret.id)).status).toBe(200);
@@ -118,8 +140,7 @@ test.describe('access control: USER share is read-only and scoped @security', ()
 
     expect((await viewerApi.folderContents(l.shared.id)).status).toBe(404);
     expect((await viewerApi.getFile(l.contract.id)).status).toBe(404);
-    const received = await viewerApi.receivedShares({ limit: 100 });
-    expect(received.body.items.map((s) => s.shareId)).not.toContain(l.shareId);
+    expect((await allReceivedShares(viewerApi)).map((s) => s.shareId)).not.toContain(l.shareId);
   });
 
   test('ACC-08 sharing is idempotent and re-sharing after revoke works', covers('TC-58'), async ({ ownerApi, viewerApi, roomId, testFolder, viewerEmail }) => {
@@ -130,6 +151,7 @@ test.describe('access control: USER share is read-only and scoped @security', ()
 
     await ownerApi.revokeShare(l.shareId);
     const reshared = await ownerApi.shareUser('FOLDER', l.shared.id, viewerEmail);
+    createdShares.push(reshared.body.id);
     expect(reshared.body.id).not.toBe(l.shareId);
     expect((await viewerApi.folderContents(l.shared.id)).status).toBe(200);
   });
