@@ -141,24 +141,40 @@ I worked with Claude Code: Claude Opus as the main assistant, plus Claude Sonnet
 | Documents | Wrote the drafts | I reviewed them, asked for simpler language and set the final priorities |
 | Automation | Wrote the framework and the API tests; a helper wrote the browser tests | I ran every test on my machine, including the visible browser runs, and sent back the failures |
 
-**Where AI was wrong, and how I caught it.** AI was fast and useful, but it made mistakes regularly. My rule: nothing goes into the report or the tests until it is checked on the live site, by a script, or by hand. Real examples from this assignment:
+**Where AI was wrong, and how I caught it**
 
-- **Bugs that looked worse than they are.** The first draft overstated several bugs:
-  - F-15 said "other tabs keep showing data after sign-out". I asked what happens on refresh: the next click or a refresh goes to login, so the bug is small.
-  - F-16 ("Close leads nowhere") only happens after a page refresh or when the file is opened by a direct link.
-  - F-11 (duplicate folders) cannot be reproduced through the UI.
-  - F-19 (long names) is fine on a laptop and breaks only on a phone.
+AI was fast and useful, but it made mistakes regularly. My rule was simple: nothing goes into the report or the tests until it is checked on the live site, by a script, or by hand. Below are the real cases from this assignment.
 
-  All were re-checked the way a real user would hit them and their priority was lowered.
-- **A "serious" bug that a human cannot reproduce.** The browser test for F-10 creates two public links with a machine-speed double-click. I double-clicked the button by hand, and the UI blocked the second click. So F-10 went from high to medium, and the test description now says it reproduces a race, not a normal user path.
-- **Bugs that were not bugs.**
-  - From the code, AI suspected that an HTML page uploaded as a PDF would run as a web page; on the live site storage serves it as plain text.
-  - Its first check of the upload panel found "no progress, only the word Uploading"; the code and a screenshot showed a real progress bar.
+**1. Bugs that AI described as worse than they really are**
 
-  Neither went into the report.
-- **A test that tested nothing.** To check Retry after a network drop, AI first broke `fetch`, but the app sends requests with axios (XMLHttpRequest), so the "network drop" never happened. The run would have looked like "Retry works". A check that the drop really fired caught this. The second attempt found a real bug (F-22).
-- **Tests that pass for the wrong reason.** A test marked "expected to fail" stays green whenever it fails, for any reason, even a setup error. So I added a custom report that prints the exact assertion each known bug fails on.
-- **Numbers that did not add up.** AI wrote the test-case totals by eye (75 checks, while there were 68). Since then every total in the documents is counted by a script, and every test ID in the documents is checked against the real list of tests.
-- **Invented details.** In one API example AI wrote an id that was never seen in a real response. I replaced it with a placeholder: every request and answer in the report must be real.
-- **Fixing the symptom, not the cause.** The test run sometimes did not finish. The first fix (turning off trace files) only hid it. The real cause was Node 26, which Playwright does not support yet. Now the npm scripts run on Node 22 automatically, and the run finishes on its own.
-- **What AI could not check at all.** Real drag-and-drop from the computer, a human double-click, and signing up with someone else's invited email (F-21). I did these by hand.
+| The bug, in plain words | What AI wrote first | What the re-check showed | Result |
+|---|---|---|---|
+| **F-15:** you sign out in one browser tab while another tab is open | "The other tab keeps showing the owner's documents after sign-out" | I asked: what happens if you refresh or click in that tab? The old list stays only until the next click. The click or a refresh sends you to the login page, and no new data is loaded | Medium → **Low** |
+| **F-16:** the second user opens a file that was shared with them and clicks Close (X) | "Close always leads to a 'not found' page" | If you open the file the normal way (from "Shared with me"), Close works. It breaks only after a page refresh (F5) or when the file is opened from a direct link | Medium → **Low** |
+| **F-11:** the same folder is created 10 times at the same moment | "The app creates duplicate folders" | In the UI a double-click on "Create" makes one folder. Duplicates appear only when a script sends many requests at once | High → **Low** |
+| **F-19:** very long file or folder names | "Long names break the table" | On a normal laptop screen it looks fine. Only on a phone screen the table gets wider than the screen and the ⋮ button is hidden | **Low**, phone only |
+| **F-10:** the owner creates a public link and later revokes it | "A double-click creates two links, so after 'Revoke' one link still works" (high priority) | I double-clicked the button by hand: it locks after the first click and creates one link. Two links appear only with requests sent at exactly the same moment (a script or a robot-speed click) | High → **Medium** |
+| **F-02:** uploading a file that is not really a PDF | "Anyone can upload any file, even programs" (high priority) | Through the UI only a file renamed to `.pdf` gets in. It keeps the `.pdf` name and opens as a broken PDF. Bypassing the 50 MB limit is possible only through the API | High → **Medium** |
+
+**2. Things AI reported that were not bugs at all**
+- **"An HTML page uploaded as a PDF will run in the browser like a website."** AI expected this from reading the code. On the live site the storage returns such a file as plain text, so there is no danger. It was not put in the report.
+- **"The upload panel has no progress bar, only the word Uploading."** This was the first quick check. I looked at the code and took a screenshot during a 45 MB upload: each file has its own progress bar. The requirement is met.
+
+**3. Tests that did not test anything**
+- **The "internet drop" that never happened.** To test the Retry button after a connection drop, AI first simulated the drop the wrong way: it broke one browser function, but the app sends its requests through another one (axios / XMLHttpRequest). So there was no drop at all, and the result looked like "Retry works". I made it check that the drop really happened. On the second try it did, and Retry turned out to be broken for real. That is bug F-22.
+- **"Expected to fail" tests that are always green.** A test for a known bug is marked "expected to fail". It stays green whenever it fails, for any reason, even because of a mistake in the test itself. So I added a short report that shows exactly why each known bug fails, for example "Expected 1 link, received 3". This way we can see the test fails because of the bug and not because of something else.
+
+**4. Wrong numbers and invented details**
+- **Totals counted by eye.** AI wrote "75 checks" in the test-case summary, while there were 68. Since then every number in the documents is counted by a script, and every test ID in the documents is checked against the real list of tests.
+- **An invented id.** In one example of an API request AI wrote an id that never appeared in a real answer. I replaced it with a placeholder. Every request and answer in the report must be real.
+- **"Every requirement has an automated test."** This was not true: sharing a whole data room is not automated, because on the shared demo account it would show other people's data. The sentence was corrected and the reason was added.
+
+**5. Fixing the symptom instead of the cause**
+- **The test run sometimes never finished.** AI's first fix (turning off trace recordings) only hid the problem, and the hang came back. The real cause was Node 26, which Playwright does not support yet. Now the npm scripts run on Node 22 automatically, and the run finishes on its own.
+
+**6. What only a human could check**
+- dragging a real file from Finder into the browser;
+- a real double-click with a hand (F-10);
+- signing up with someone else's invited email to prove F-21.
+
+I did these by hand.
