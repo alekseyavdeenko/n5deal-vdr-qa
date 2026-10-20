@@ -3,7 +3,7 @@ import { expect, test } from '../../src/ui/fixtures';
 import { ExplorerPage } from '../../src/ui/pages/explorer-page';
 
 test.describe('owner uploads and views files', () => {
-  test('two PDFs uploaded at once appear in the folder and open in the viewer', async ({ ownerPage, testFolder }) => {
+  test('E2E-03 two PDFs uploaded at once appear in the folder and open in the viewer', async ({ ownerPage, testFolder }) => {
     const files = ['first', 'second'].map((label) => ({ name: uniqueName(label, '.pdf'), buffer: makePdf(label) }));
     const [opened] = files;
     const explorer = new ExplorerPage(ownerPage);

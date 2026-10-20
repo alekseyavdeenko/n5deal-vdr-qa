@@ -12,19 +12,19 @@ import { expect, test } from '../../src/fixtures';
 test.describe('OpenAPI contract @contract', () => {
   const snapshot = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../docs/reference/openapi.json'), 'utf8'));
 
-  test('deployed API publishes the same endpoints as the committed snapshot', async ({ request }) => {
+  test('CON-01 deployed API publishes the same endpoints as the committed snapshot', async ({ request }) => {
     const live = await (await request.get(`${config.apiUrl}/docs-json`)).json();
     const ops = (doc: typeof snapshot) =>
       Object.entries(doc.paths as Record<string, object>).flatMap(([p, methods]) => Object.keys(methods).map((m) => `${m.toUpperCase()} ${p}`)).sort();
     expect(ops(live)).toEqual(ops(snapshot));
   });
 
-  test('deployed API publishes the same schemas as the committed snapshot', async ({ request }) => {
+  test('CON-02 deployed API publishes the same schemas as the committed snapshot', async ({ request }) => {
     const live = await (await request.get(`${config.apiUrl}/docs-json`)).json();
     expect(live.components.schemas).toEqual(snapshot.components.schemas);
   });
 
-  test('every documented operation declares its success response', async () => {
+  test('CON-03 every documented operation declares its success response', async () => {
     const missing: string[] = [];
     for (const [p, methods] of Object.entries(snapshot.paths as Record<string, Record<string, { responses: object }>>)) {
       for (const [m, op] of Object.entries(methods)) {

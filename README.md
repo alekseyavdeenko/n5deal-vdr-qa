@@ -11,7 +11,7 @@ This is my test assignment for N5Deal. I tested an existing product, the [Virtua
 | All checks with expected and actual results (69) | [docs/test-cases.md](docs/test-cases.md) |
 | Bug report, by priority (21 bugs) | [docs/findings.md](docs/findings.md) |
 | Final QA report: is it ready for release | [docs/qa-report.md](docs/qa-report.md) |
-| Automated tests | [`tests/`](tests) and [`src/`](src) |
+| Automated tests: all 65 with IDs, files and what each checks | [docs/autotests.md](docs/autotests.md), code in [`tests/`](tests) and [`src/`](src) |
 | How I tested, how to run the tests, how I used AI | this page |
 
 ## Short result

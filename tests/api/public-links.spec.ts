@@ -23,7 +23,7 @@ test.describe('public links @security', () => {
     hidden = await ownerApi.uploadPdf({ dataRoomId: roomId, folderId: other.id, name: 'hidden.pdf', bytes: makePdf('hidden') });
   });
 
-  test('anyone with the link can browse the shared folder and open its files', async ({ ownerApi, anonApi }) => {
+  test('PUB-01 anyone with the link can browse the shared folder and open its files', async ({ ownerApi, anonApi }) => {
     const link = await ownerApi.sharePublic('FOLDER', deal.id);
     expect(link.status).toBe(201);
     const token = link.body.token!;
@@ -41,7 +41,7 @@ test.describe('public links @security', () => {
     expect(Buffer.from(await pdf.arrayBuffer()).subarray(0, 5).toString()).toBe('%PDF-');
   });
 
-  test('a link cannot be used to step outside the shared folder', async ({ ownerApi, anonApi, roomId, testFolder }) => {
+  test('PUB-02 a link cannot be used to step outside the shared folder', async ({ ownerApi, anonApi, roomId, testFolder }) => {
     const token = (await ownerApi.sharePublic('FOLDER', deal.id)).body.token!;
     const escapes: [string, number][] = [
       ['parent folder', (await anonApi.publicFolderContents(token, testFolder.id)).status],
@@ -55,7 +55,7 @@ test.describe('public links @security', () => {
     void roomId;
   });
 
-  test('a file link opens that file and nothing else', async ({ ownerApi, anonApi }) => {
+  test('PUB-03 a file link opens that file and nothing else', async ({ ownerApi, anonApi }) => {
     const token = (await ownerApi.sharePublic('FILE', memo.id)).body.token!;
     expect((await anonApi.publicSummary(token)).body).toMatchObject({ resourceType: 'FILE', resourceId: memo.id, size: memo.size, mimeType: 'application/pdf' });
     expect((await anonApi.publicViewUrl(token, memo.id)).status).toBe(200);
@@ -63,14 +63,14 @@ test.describe('public links @security', () => {
     expect((await anonApi.publicFile(token, hidden.id)).status).toBe(404);
   });
 
-  test('creating a link twice returns the same link', async ({ ownerApi }) => {
+  test('PUB-04 creating a link twice returns the same link', async ({ ownerApi }) => {
     const first = await ownerApi.sharePublic('FOLDER', deal.id);
     const second = await ownerApi.sharePublic('FOLDER', deal.id);
     expect(second.body.token).toBe(first.body.token);
     expect((await ownerApi.listShares('FOLDER', deal.id, 'PUBLIC_LINK')).body.items).toHaveLength(1);
   });
 
-  test('revoked link answers 410 everywhere; a new link gets a new token', async ({ ownerApi, anonApi }) => {
+  test('PUB-05 revoked link answers 410 everywhere; a new link gets a new token', async ({ ownerApi, anonApi }) => {
     const share = (await ownerApi.sharePublic('FOLDER', deal.id)).body;
     expect((await ownerApi.revokeShare(share.id)).status).toBe(204);
 
@@ -86,14 +86,14 @@ test.describe('public links @security', () => {
     expect((await anonApi.publicSummary(share.token!)).status).toBe(410);
   });
 
-  test('deleting the shared folder kills the link', async ({ ownerApi, anonApi }) => {
+  test('PUB-06 deleting the shared folder kills the link', async ({ ownerApi, anonApi }) => {
     const token = (await ownerApi.sharePublic('FOLDER', deal.id)).body.token!;
     expect((await ownerApi.deleteFolder(deal.id)).status).toBe(204);
     expect((await anonApi.publicSummary(token)).status).toBe(404);
     expect((await anonApi.publicViewUrl(token, memo.id)).status).toBe(404);
   });
 
-  test('unknown token is a plain 404', async ({ anonApi }) => {
+  test('PUB-07 unknown token is a plain 404', async ({ anonApi }) => {
     expect((await anonApi.publicSummary('this-token-does-not-exist-0000000')).status).toBe(404);
   });
 });

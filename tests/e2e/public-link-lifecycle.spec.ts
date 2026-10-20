@@ -4,7 +4,7 @@ import { ExplorerPage } from '../../src/ui/pages/explorer-page';
 import { PublicSharePage } from '../../src/ui/pages/public-share-page';
 
 test.describe('public link lifecycle', () => {
-  test('owner creates a link, an anonymous visitor opens it, revoking shuts it down', async ({ ownerPage, anonPage, ownerApi, roomId, testFolder }) => {
+  test('E2E-04 owner creates a link, an anonymous visitor opens it, revoking shuts it down', async ({ ownerPage, anonPage, ownerApi, roomId, testFolder }) => {
     const file = await ownerApi.uploadPdf({
       dataRoomId: roomId,
       folderId: testFolder.id,

@@ -3,7 +3,7 @@ import { expect, test } from '../../src/ui/fixtures';
 import { SharedWithMePage } from '../../src/ui/pages/shared-with-me-page';
 
 test.describe('viewer of a shared folder', () => {
-  test('gets a read-only view: no toolbar actions, no Rename/Move/Delete on files', async ({ ownerApi, viewerPage, viewerEmail, roomId, testFolder }) => {
+  test('E2E-05 gets a read-only view: no toolbar actions, no Rename/Move/Delete on files', async ({ ownerApi, viewerPage, viewerEmail, roomId, testFolder }) => {
     const subfolder = await ownerApi.createFolder({ name: uniqueName('subfolder'), dataRoomId: roomId, parentId: testFolder.id });
     expect(subfolder.status, 'create subfolder').toBe(201);
     const file = await ownerApi.uploadPdf({

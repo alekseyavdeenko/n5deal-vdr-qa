@@ -11,7 +11,7 @@
 | Усі перевірки з очікуваним і фактичним результатом (69) | [docs/test-cases.uk.md](docs/test-cases.uk.md) |
 | Звіт про баги, за пріоритетом (21 баг) | [docs/findings.uk.md](docs/findings.uk.md) |
 | Фінальний QA-звіт: чи готовий продукт до релізу | [docs/qa-report.uk.md](docs/qa-report.uk.md) |
-| Автотести | [`tests/`](tests) і [`src/`](src) |
+| Автотести: усі 65 з ID, файлами і тим, що перевіряє кожен | [docs/autotests.uk.md](docs/autotests.uk.md), код у [`tests/`](tests) і [`src/`](src) |
 | Як я тестував, як запустити тести, як я використовував AI | ця сторінка |
 
 ## Короткий результат

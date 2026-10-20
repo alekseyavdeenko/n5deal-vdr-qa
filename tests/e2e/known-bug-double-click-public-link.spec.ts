@@ -10,7 +10,7 @@ import { ExplorerPage } from '../../src/ui/pages/explorer-page';
  */
 test.describe('sharing @known-bug', () => {
   test(
-    'double click on "Create public link" creates exactly one active link',
+    'E2E-06 double click on "Create public link" creates exactly one active link',
     { annotation: { type: 'issue', description: 'F-10' } },
     async ({ ownerPage, ownerApi, testFolder }) => {
       test.fail(true, 'F-10: parallel create requests produce several active public links');
