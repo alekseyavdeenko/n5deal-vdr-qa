@@ -23,7 +23,7 @@ I tested the live version (commit `9c85149`) on 2026-10-20, in two rounds. The s
 - 5 medium priority;
 - 22 low priority.
 
-There are also 3 design risks.
+There are also 4 design risks.
 
 **Most important (F-21):** if the owner shares a folder with an email that has no account yet, anyone who registers with that email first gets the folder. The app never checks that the person owns the email. I confirmed this end to end on the live site.
 
@@ -76,6 +76,7 @@ In "How to reproduce" the first word says where the bug happens: **UI** means an
 | R-01 | A file link that a viewer already opened keeps working for up to 5 minutes after access is revoked |
 | R-02 | The login token is valid for 7 days and is kept in the browser's localStorage. "Sign out" does not cancel it on the server. If the token is stolen, it works for a week |
 | R-03 | There is no limit on login or sign-up attempts, so passwords can be guessed by brute force. Sign-up also says "email already exists", so anyone can check which emails have accounts. Found in the code; I did not attack the live site |
+| R-04 | The API gets very slow when several people use it at the same time. During my last full run every database request took 3–4 s (normally about 0.3 s), while `/health` and file storage stayed fast. The product README says the database pool has a single connection (`connection_limit=1`), so users queue behind each other. I did not load-test (shared production); this is what normal use showed |
 
 ## What works well
 All of this was checked, and most of it is covered by automated tests.

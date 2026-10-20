@@ -176,5 +176,3 @@ AI was fast and useful, but it made mistakes regularly. My rule was simple: noth
 - dragging a real file from Finder into the browser;
 - a real double-click with a hand (F-10);
 - signing up with someone else's invited email to prove F-21.
-
-I did these by hand.

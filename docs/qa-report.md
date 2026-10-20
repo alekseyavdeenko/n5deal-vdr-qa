@@ -49,13 +49,13 @@ These are days of work, not weeks. Each fix already has an automated test that w
 Details: [test-plan.md](test-plan.md), [test-cases.md](test-cases.md) (85 checks), [findings.md](findings.md).
 
 **Not tested:**
-- load (shared production);
+- load (shared production). But normal use already showed slow answers: in my last run every database request took 3–4 s (R-04);
 - brute force (no limits, found in code, not attacked);
 - other browsers;
 - accessibility.
 
 ## Main problems and risks
-**28 bugs:** 1 high, 5 medium and 22 low priority. There are also 3 design risks.
+**28 bugs:** 1 high, 5 medium and 22 low priority. There are also 4 design risks.
 
 They come from a few common causes:
 1. **No identity check** (F-21). Sign-up does not confirm the email, and sharing trusts the email.

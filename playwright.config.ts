@@ -14,8 +14,10 @@ export default defineConfig({
   fullyParallel: true,
   workers: process.env.CI ? 2 : 3,
   retries: process.env.CI ? 1 : 0,
-  timeout: 45_000,
-  expect: { timeout: 10_000 },
+  // The target is a shared production whose database is sometimes slow (3-4 s per request when other
+  // testers load it), so the limits are generous: a slow environment must not look like a failing test.
+  timeout: 120_000,
+  expect: { timeout: 20_000 },
   forbidOnly: Boolean(process.env.CI),
   reporter: [
     ['list'],
