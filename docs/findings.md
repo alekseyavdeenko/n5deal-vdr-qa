@@ -138,6 +138,8 @@ All of this was checked, and most of it is covered by automated tests.
 **Fix idea:** allow only one active link per item in the database, and make Revoke close all of them.
 
 ### F-01 — Same-name files in one upload are not renamed
+![F-01](evidence/F-01-F-06-F-08-duplicate-names-empty-file-error-local-dates.jpg)
+
 **Steps:** in one upload, select two files called `report.pdf` from different folders (or drag them together).
 
 **Expected:** the second becomes `report (1).pdf`, the same as when you upload them one after another.
@@ -158,3 +160,97 @@ All of this was checked, and most of it is covered by automated tests.
 - all of them are accepted;
 - the first name is displayed as "invoiceexe.pdf", although it really ends with ".exe";
 - two `case-1` folders look identical.
+
+---
+
+## Screenshots of low-priority bugs
+
+**F-05 — the owner shares a folder with their own email** (logged in as "Viewer", sharing with viewer@example.com):
+
+![F-05 dialog](evidence/F-05-owner-shares-with-own-email.jpg)
+
+**F-05 — and the folder then appears in their own "Shared with me":**
+
+![F-05 shared with me](evidence/F-05-own-folder-in-shared-with-me.jpg)
+
+**F-06 and F-08** are on the F-01 screenshot above:
+- F-06: the upload panel shows the raw text "size must not be less than 1";
+- F-08: the dates are in Ukrainian.
+
+**F-09 — "Link not available" with a Retry button that cannot help:**
+
+![F-09](evidence/F-09-invalid-link-useless-retry.jpg)
+
+**F-16 — Close after a refresh of the file page leads to "Data room not found":**
+
+![F-16](evidence/F-16-close-after-refresh-dead-end.jpg)
+
+**F-18** is on the F-02 screenshot above: the viewer's title is a technical id, not the file name.
+
+**F-19 — on a phone (375 px) a long folder name pushes the columns and the actions (⋮) off the screen:**
+
+![F-19](evidence/F-19-phone-width-actions-off-screen.jpg)
+
+**F-20 — the delete warning says "2 files" but not that this folder is shared with someone:**
+
+![F-20](evidence/F-20-delete-dialog-silent-about-sharing.jpg)
+
+## API proof for bugs you cannot see in the UI
+These are the real requests and answers from the live API on 2026-10-20. Ids are shortened.
+
+**F-11 — 10 creates of the same folder at the same moment:**
+```
+POST /folders {"name":"race-dup", ...}  x10 in parallel
+→ 201, 201, 201, 201, 201, 201, 201, 201, 201, 201   (10 folders "race-dup")
+```
+
+**F-12 — an upload that was never finished keeps its name:**
+```
+POST /files/upload-intent {"name":"ghost.pdf", ...}   → 201 {"name":"ghost.pdf"}       (file never uploaded)
+POST /files/upload-intent {"name":"ghost.pdf", ...}   → 201 {"name":"ghost (1).pdf"}
+GET  /folders/{id}/contents                           → {"items":[]}                  (folder looks empty)
+```
+
+**F-13 — a typo in a field name moves the file to the top of the room:**
+```
+PATCH /files/{id}/move {"targetFolderID":"<folder id>"}   (should be targetFolderId)
+→ 200 {"folderId": null, ...}
+```
+
+**F-14 — server errors instead of normal errors:**
+```
+POST   /folders {"name":"nul\u0000name", ...}       → 500 {"message":"Internal server error"}
+DELETE /files/{id}  x3 at the same moment           → 204, 500, 500
+POST   /files/{id}/complete  (nothing uploaded)     → 500 {"message":"Could not verify the upload"}
+```
+
+**F-17 — the error text shows whether an item exists** (as the second user):
+```
+GET /folders/{owner's folder}/contents   → 404 {"message":"Resource not found"}
+GET /folders/{random id}/contents        → 404 {"message":"Folder not found"}
+```
+
+**F-04 — the API allows another extension:**
+```
+PATCH /files/{id} {"name":"report.exe"}   → 200 {"name":"report.exe", "mimeType":"application/pdf"}
+```
+
+**F-07 — the public link info shows the internal room id to anyone:**
+```
+GET /public/{token}   (no login)
+→ 200 {"resourceType":"FOLDER","resourceName":"share-root","dataRoomId":"05f75e29-…", ...}
+```
+
+## Screenshots of things that work well
+
+**The second user sees the shared folder read-only.** There is no Upload, New folder or Share:
+
+![read-only](evidence/OK-viewer-read-only.jpg)
+
+**The owner revoked access while the second user had the folder open.** The next click shows a clear message:
+
+![revoke while viewing](evidence/OK-revoke-while-viewing.jpg)
+
+**A revoked public link shows a clear page:**
+
+![revoked link](evidence/OK-revoked-link-page.jpg)

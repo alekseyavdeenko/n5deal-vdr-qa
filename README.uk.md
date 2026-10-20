@@ -70,6 +70,35 @@
 - **Відомі баги — це теж тести.** Кожен тест описує *правильну* поведінку і позначений як «очікувано падає», тому запуск лишається зеленим. Коли виходить виправлення, Playwright повідомляє "expected to fail but passed" (очікувалося падіння, але тест пройшов). Невеликий власний звіт друкує, чому кожен відомий баг досі падає. Так видно, що він падає з правильної причини, наприклад `F-10: Expected 1 link, received 3`.
 - **Жодних паролів у коді.** Їх читають з `.env` або з GitHub secrets. Тести, яким потрібен логін, пропускаються, якщо `.env` немає.
 
+### Як виглядає прогін
+Справжній прогін на моєму комп'ютері. Блок «Known bugs» наприкінці друкує мій власний звіт: для кожного відомого бага він показує, що баг досі відтворюється, і чому (скорочено):
+
+```
+$ npx playwright test --project=api
+Running 59 tests using 3 workers
+  ...
+  59 passed (2.2m)
+
+Known bugs (14):
+  ✘ still reproduces  F-11: no uniqueness under concurrency
+      Expected length: 1  |  Received length: 5
+  ✘ still reproduces  F-01: same-name files in one batch keep duplicate names
+      Expected: 3  |  Received: 1
+  ✘ still reproduces  F-10: parallel create-link requests create several active tokens
+      Expected length: 1  |  Received length: 3
+  ✘ still reproduces  F-14: 500 on NUL character
+      Expected: 400  |  Received: 500
+  ✘ still reproduces  F-13: typo in move body moves the file to the room root
+      Expected: 400  |  Received: 200
+  ✘ still reproduces  F-12: pending upload intents reserve names forever
+      Expected: "ghost.pdf"  |  Received: "ghost (1).pdf"
+  ✘ still reproduces  F-02: server trusts the declared MIME type
+      Expected: 400  |  Received: 201
+  ✘ still reproduces  F-03: RLO spoofing: invoice\u202Efdp.exe renders as invoiceexe.pdf
+      Expected: 400  |  Received: 201
+  ...
+```
+
 ### Як запустити
 
 ```bash

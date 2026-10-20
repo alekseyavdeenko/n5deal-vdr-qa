@@ -138,6 +138,8 @@
 **Ідея виправлення:** дозволити в базі тільки одне активне посилання на елемент і зробити так, щоб Revoke закривав усі.
 
 ### F-01 — Файли з однаковою назвою в одному завантаженні не перейменовуються
+![F-01](evidence/F-01-F-06-F-08-duplicate-names-empty-file-error-local-dates.jpg)
+
 **Кроки:** в одному завантаженні вибрати два файли `report.pdf` з різних папок (або перетягнути їх разом).
 
 **Очікувано:** другий стає `report (1).pdf`, так само як коли завантажувати їх по одному.
@@ -158,3 +160,97 @@
 - усі вони приймаються;
 - перша назва показується як "invoiceexe.pdf", хоча насправді закінчується на ".exe";
 - дві папки `case-1` виглядають однаково.
+
+---
+
+## Скриншоти багів з низьким пріоритетом
+
+**F-05 — власник ділиться папкою зі своїм власним email** (увійшов як "Viewer" і ділиться з viewer@example.com):
+
+![F-05 вікно](evidence/F-05-owner-shares-with-own-email.jpg)
+
+**F-05 — і папка з'являється в його власному "Shared with me":**
+
+![F-05 shared with me](evidence/F-05-own-folder-in-shared-with-me.jpg)
+
+**F-06 і F-08** видно на скриншоті F-01 вище:
+- F-06: панель завантаження показує сирий текст "size must not be less than 1";
+- F-08: дати українською.
+
+**F-09 — сторінка "Link not available" з кнопкою Retry, яка нічим не допоможе:**
+
+![F-09](evidence/F-09-invalid-link-useless-retry.jpg)
+
+**F-16 — Close після оновлення сторінки файлу веде на "Data room not found":**
+
+![F-16](evidence/F-16-close-after-refresh-dead-end.jpg)
+
+**F-18** видно на скриншоті F-02 вище: у заголовку переглядача технічний id, а не назва файлу.
+
+**F-19 — на телефоні (375 px) довга назва папки виштовхує колонки й кнопку дій (⋮) за край екрана:**
+
+![F-19](evidence/F-19-phone-width-actions-off-screen.jpg)
+
+**F-20 — попередження про видалення пише "2 files", але не каже, що цією папкою з кимось поділилися:**
+
+![F-20](evidence/F-20-delete-dialog-silent-about-sharing.jpg)
+
+## Докази через API для багів, яких не видно в UI
+Це справжні запити й відповіді живого API за 2026-10-20. Id скорочено.
+
+**F-11 — 10 створень однієї папки в один момент:**
+```
+POST /folders {"name":"race-dup", ...}  x10 одночасно
+→ 201, 201, 201, 201, 201, 201, 201, 201, 201, 201   (10 папок "race-dup")
+```
+
+**F-12 — завантаження, яке так і не завершилось, тримає назву:**
+```
+POST /files/upload-intent {"name":"ghost.pdf", ...}   → 201 {"name":"ghost.pdf"}       (файл так і не завантажили)
+POST /files/upload-intent {"name":"ghost.pdf", ...}   → 201 {"name":"ghost (1).pdf"}
+GET  /folders/{id}/contents                           → {"items":[]}                  (папка виглядає порожньою)
+```
+
+**F-13 — одруківка в назві поля переносить файл у корінь кімнати:**
+```
+PATCH /files/{id}/move {"targetFolderID":"<id папки>"}   (правильно: targetFolderId)
+→ 200 {"folderId": null, ...}
+```
+
+**F-14 — помилки сервера замість нормальних помилок:**
+```
+POST   /folders {"name":"nul\u0000name", ...}       → 500 {"message":"Internal server error"}
+DELETE /files/{id}  x3 в один момент                → 204, 500, 500
+POST   /files/{id}/complete  (нічого не завантажено) → 500 {"message":"Could not verify the upload"}
+```
+
+**F-17 — текст помилки показує, чи існує елемент** (від імені другого користувача):
+```
+GET /folders/{папка власника}/contents   → 404 {"message":"Resource not found"}
+GET /folders/{випадковий id}/contents    → 404 {"message":"Folder not found"}
+```
+
+**F-04 — API дозволяє інше розширення:**
+```
+PATCH /files/{id} {"name":"report.exe"}   → 200 {"name":"report.exe", "mimeType":"application/pdf"}
+```
+
+**F-07 — інформація про публічне посилання показує внутрішній id кімнати будь-кому:**
+```
+GET /public/{token}   (без входу)
+→ 200 {"resourceType":"FOLDER","resourceName":"share-root","dataRoomId":"05f75e29-…", ...}
+```
+
+## Скриншоти того, що працює добре
+
+**Другий користувач бачить папку тільки для читання.** Немає Upload, New folder і Share:
+
+![тільки читання](evidence/OK-viewer-read-only.jpg)
+
+**Власник відкликав доступ, поки другий користувач тримав папку відкритою.** Наступний клік показує зрозуміле повідомлення:
+
+![відкликання під час перегляду](evidence/OK-revoke-while-viewing.jpg)
+
+**Відкликане публічне посилання показує зрозумілу сторінку:**
+
+![відкликане посилання](evidence/OK-revoked-link-page.jpg)
