@@ -71,32 +71,42 @@ The site is a shared production that other candidates use too. So I did no load 
 - **No passwords in the code.** They are read from `.env` or GitHub secrets. Tests that need a login are skipped when there is no `.env`.
 
 ### What a run looks like
-A real run on my machine. The "Known bugs" block at the end comes from the custom report: for each known bug it shows that the bug still happens and why (shortened):
+A real full run on my machine (the last one, after all fixes). The "Known bugs" block at the end comes from the custom report: for each known bug it shows that the bug still happens and why (shortened):
 
 ```
-$ npx playwright test --project=api
-Running 59 tests using 3 workers
+$ npm test
+[qa] Node 26.8.2 is not supported by Playwright yet - running on Node 22 instead.
+[setup] run n5qa-20261020130030-67ti -> folder cb9844d8-…
+Running 68 tests using 3 workers
   ...
-  59 passed (2.2m)
+[teardown] run folder deleted: 204
 
-Known bugs (14):
-  ✘ still reproduces  F-11: no uniqueness under concurrency
-      Expected length: 1  |  Received length: 5
+  68 passed (2.7m)
+
+Known bugs (18):
   ✘ still reproduces  F-01: same-name files in one batch keep duplicate names
       Expected: 3  |  Received: 1
-  ✘ still reproduces  F-10: parallel create-link requests create several active tokens
+  ✘ still reproduces  F-10: parallel create-link requests create several active links; UI revoke closes only one
       Expected length: 1  |  Received length: 3
+  ✘ still reproduces  F-11: no uniqueness under concurrency
+      Expected length: 1  |  Received length: 5
   ✘ still reproduces  F-14: 500 on NUL character
       Expected: 400  |  Received: 500
   ✘ still reproduces  F-13: typo in move body moves the file to the room root
       Expected: 400  |  Received: 200
   ✘ still reproduces  F-12: pending upload intents reserve names forever
       Expected: "ghost.pdf"  |  Received: "ghost (1).pdf"
-  ✘ still reproduces  F-02: server trusts the declared MIME type
-      Expected: 400  |  Received: 201
   ✘ still reproduces  F-03: RLO spoofing: invoice\u202Efdp.exe renders as invoiceexe.pdf
       Expected: 400  |  Received: 201
-  ...
+  ✘ still reproduces  F-02: server trusts the declared MIME type
+      Expected: 400  |  Received: 201
+  ✘ still reproduces  F-05: self-share appears in own "Shared with me"
+      Expected: 400  |  Received: 201
+  ✘ still reproduces  F-28: the link is lost after login
+      Expected pattern: /\/folder\/e522d6ed-…/  |  Received string:  "https://virtual-data-room-ten.vercel.app/"
+  ✘ still reproduces  F-22: Retry after a failed "complete" request never succeeds
+      Expected: visible
+  ...  (18 in total)
 ```
 
 ### How to run

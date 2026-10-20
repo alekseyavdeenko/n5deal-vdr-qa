@@ -71,32 +71,42 @@
 - **Жодних паролів у коді.** Їх читають з `.env` або з GitHub secrets. Тести, яким потрібен логін, пропускаються, якщо `.env` немає.
 
 ### Як виглядає прогін
-Справжній прогін на моєму комп'ютері. Блок «Known bugs» наприкінці друкує мій власний звіт: для кожного відомого бага він показує, що баг досі відтворюється, і чому (скорочено):
+Справжній повний прогін на моєму комп'ютері (останній, після всіх виправлень). Блок «Known bugs» наприкінці друкує мій власний звіт: для кожного відомого бага він показує, що баг досі відтворюється, і чому (скорочено):
 
 ```
-$ npx playwright test --project=api
-Running 59 tests using 3 workers
+$ npm test
+[qa] Node 26.8.2 is not supported by Playwright yet - running on Node 22 instead.
+[setup] run n5qa-20261020130030-67ti -> folder cb9844d8-…
+Running 68 tests using 3 workers
   ...
-  59 passed (2.2m)
+[teardown] run folder deleted: 204
 
-Known bugs (14):
-  ✘ still reproduces  F-11: no uniqueness under concurrency
-      Expected length: 1  |  Received length: 5
+  68 passed (2.7m)
+
+Known bugs (18):
   ✘ still reproduces  F-01: same-name files in one batch keep duplicate names
       Expected: 3  |  Received: 1
-  ✘ still reproduces  F-10: parallel create-link requests create several active tokens
+  ✘ still reproduces  F-10: parallel create-link requests create several active links; UI revoke closes only one
       Expected length: 1  |  Received length: 3
+  ✘ still reproduces  F-11: no uniqueness under concurrency
+      Expected length: 1  |  Received length: 5
   ✘ still reproduces  F-14: 500 on NUL character
       Expected: 400  |  Received: 500
   ✘ still reproduces  F-13: typo in move body moves the file to the room root
       Expected: 400  |  Received: 200
   ✘ still reproduces  F-12: pending upload intents reserve names forever
       Expected: "ghost.pdf"  |  Received: "ghost (1).pdf"
-  ✘ still reproduces  F-02: server trusts the declared MIME type
-      Expected: 400  |  Received: 201
   ✘ still reproduces  F-03: RLO spoofing: invoice\u202Efdp.exe renders as invoiceexe.pdf
       Expected: 400  |  Received: 201
-  ...
+  ✘ still reproduces  F-02: server trusts the declared MIME type
+      Expected: 400  |  Received: 201
+  ✘ still reproduces  F-05: self-share appears in own "Shared with me"
+      Expected: 400  |  Received: 201
+  ✘ still reproduces  F-28: the link is lost after login
+      Expected pattern: /\/folder\/e522d6ed-…/  |  Received string:  "https://virtual-data-room-ten.vercel.app/"
+  ✘ still reproduces  F-22: Retry after a failed "complete" request never succeeds
+      Expected: visible
+  ...  (18 in total)
 ```
 
 ### Як запустити
