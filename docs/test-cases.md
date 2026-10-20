@@ -21,7 +21,7 @@ These are the checks executed on 2026-10-20 against production (commit `9c85149`
 | TC-03 | Call protected endpoints without a token, or with a forged token | 401 | 401 on `/auth/me`, `/data-rooms`, `/shares/received` | ✅ | A `api/smoke`, `api/auth` |
 | TC-04 | Register with an invalid email, a short password or an empty name | 400 with a field message, no account created | 400 with a message naming the field | ✅ | A `api/auth` |
 | TC-05 | Register an existing email (different case) | Rejected without revealing the account exists | 409, which confirms the email is registered | ⚠️ R-04 | A `api/auth` |
-| TC-06 | Sign out in tab 1, look at tab 2 | Tab 2 goes to the login page | Tab 2 keeps showing the owner's folders and files | ❌ F-15 | M |
+| TC-06 | Sign out in tab 1, look at tab 2 | Tab 2 goes to the login page | Tab 2 keeps showing the already-loaded list until the next action; the next click or a reload redirects to /login, and no new data is fetched | ⚠️ F-15 | M |
 | TC-07 | Reload on a deep link (`/folder/<id>`) | SPA loads, no 404 | 200, app loads | ✅ | A `api/smoke` |
 
 ## 2. Folders
@@ -118,8 +118,8 @@ These are the checks executed on 2026-10-20 against production (commit `9c85149`
 | Status | Count | Notes |
 |---|---|---|
 | ✅ Pass | 43 | |
-| ❌ Fail | 16 | 15 distinct findings: F-02 covers two cases (TC-37, TC-38) |
-| ⚠️ Pass with note / risk | 9 | Minor findings and design risks |
+| ❌ Fail | 15 | 14 distinct findings: F-02 covers two cases (TC-37, TC-38) |
+| ⚠️ Pass with note / risk | 10 | Minor findings and design risks |
 
 **How they were run:**
 - 29 were exercised manually in the UI.

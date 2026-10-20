@@ -53,12 +53,12 @@ Each item takes days, not weeks, and every fix already has an automated test tha
 ## Key issues and risks
 
 **20 findings and 4 design risks.**
-- By priority: 4 high, 6 medium, 10 low.
+- By priority: 4 high, 5 medium, 11 low.
 - By theme:
   1. **Concurrency without DB constraints** (F-01, F-10, F-11, F-14). One root cause behind three of the four high-priority bugs: uniqueness is checked in code (`findFirst`, then `create`), not enforced by the database. **Recommendation:** unique and partial-unique indexes, plus disabled buttons while a request is pending.
   2. **The server trusts the client** (F-02, F-04, F-13). Declared MIME type and size, extension, and unknown fields are accepted as sent.
   3. **Names are not normalized** (F-03). Spoofing and invisible duplicates.
-  4. **Session model** (F-15, R-03, R-04). A token lives 7 days in localStorage, logout is not shared across tabs, and there is no throttling.
+  4. **Session model** (F-15, R-03, R-04). A token lives 7 days in localStorage and cannot be revoked, other tabs keep showing loaded data after logout until the next action, and there is no throttling.
   5. **Sharing to unverified identities** (R-01). Email squatting.
 
 ## Automated coverage
@@ -80,7 +80,7 @@ The full suite runs in about 3 minutes.
   - drag-and-drop: the same upload pipeline is covered through the file input;
   - per-file progress: asserted only through the final "Done" state;
   - sharing a whole data room: deliberately not automated here, because on the shared demo account a room share would expose other people's data to the viewer account. Folder and file sharing use the same access-resolution code;
-- every high- and medium-priority finding except F-15 and F-16 has an automated reproduction.
+- every high- and medium-priority finding except F-16 has an automated reproduction.
 
 **Framework properties:**
 - runs safely against a shared environment (isolated run folders, auto-cleanup, sweep of crashed runs);

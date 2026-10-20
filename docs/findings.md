@@ -12,7 +12,7 @@
 
 | | High priority | Medium | Low | Total |
 |---|---|---|---|---|
-| Findings | 4 | 6 | 10 | **20** |
+| Findings | 4 | 5 | 11 | **20** |
 | Design risks | | | | **4** |
 
 **The two that matter most:**
@@ -33,7 +33,6 @@
 | ID | Area | Finding | Sev. | 🤖 |
 |---|---|---|---|---|
 | F-03 | Names | Bidi-override, zero-width and control characters are accepted in names. `invoice‮fdp.exe` renders as "invoiceexe.pdf", and `case-1` and `case-1​` look identical | Medium | API |
-| F-15 | Session | Sign out in one tab leaves other open tabs showing the owner's folders and files | Medium | — |
 | F-14 | API errors | Unhandled 500s in three places: a NUL character in a name; a parallel DELETE of the same file (1×204, 2×500); `complete` before the file reached storage | Medium | API |
 | F-12 | Upload | An abandoned upload reserves its name forever: the next `ghost.pdf` becomes `ghost (1).pdf` in a folder that looks empty | Medium | API |
 | F-13 | API | Unknown JSON fields are silently ignored. A typo `targetFolderID` moves the file to the **room root** with 200, and `parentID` creates a root folder | Medium | API |
@@ -51,6 +50,7 @@
 | F-18 | Viewer | The embedded PDF viewer's title bar shows the storage UUID instead of the file name | — |
 | F-19 | Responsive | One long name without spaces stretches the table to 1838 px; on narrow screens Size, Modified and the row actions scroll out of view | — |
 | F-20 | Delete UX | The delete dialog doesn't mention that the folder is shared. Delete stays enabled when the preview request failed | — |
+| F-15 | Session | After Sign out in one tab, other open tabs keep showing the already-loaded folder list until the next action; the next click or a reload goes to /login, and no new data is fetched | — |
 | F-08 | i18n | Dates follow the browser locale (`20 жовт. 2026 р.`) inside an English-only UI | — |
 
 ### Design risks (not bugs, but need a product decision)
@@ -157,12 +157,6 @@ What a release decision can rely on. All of it is covered by the automated suite
 
 **Expected:** reject control and bidi characters, and normalize Unicode (NFC + strip zero-width) before the uniqueness check.
 
-### F-15 — Sign out does not reach other tabs
-**Steps:** open the data room in two tabs → Sign out in tab 1 → look at tab 2.
-
-**Actual:** tab 2 keeps showing the owner's folders and files until the next request.
-
-**Expected:** every tab returns to the login page (a `storage` event listener, or BroadcastChannel). This matters on shared or office computers.
 
 ### F-14 — Unhandled 500 errors
 | Request | Actual | Expected |
