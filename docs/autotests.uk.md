@@ -21,11 +21,11 @@
 
 | Запускаєш | Отримуєш | Чому |
 |---|---|---|
-| `npx playwright test` | **68** | усе |
-| `npx playwright test --project=api` | **60** | усі тести без браузера: SMK + CON + AUTH + FOL + FIL + ACC + PUB + BUG |
-| `npx playwright test --project=api --grep @known-bug` | **15** | тільки BUG-01…BUG-15 |
-| `npx playwright test --project=e2e` | **8** | тільки E2E-01…E2E-08 |
-| `npx playwright test -g "FOL-03"` | **1** | один тест за його ID |
+| `npm test` | **68** | усе |
+| `npm run test:api` | **60** | усі тести без браузера: SMK + CON + AUTH + FOL + FIL + ACC + PUB + BUG |
+| `npm run test:api -- --grep @known-bug` | **15** | тільки BUG-01…BUG-15 |
+| `npm run test:e2e` | **8** | тільки E2E-01…E2E-08 |
+| `npm test -- -g "FOL-03"` | **1** | один тест за його ID |
 
 Відомі баги перевіряються загалом 18 тестами: BUG-01…BUG-15 на рівні API плюс E2E-06…E2E-08 у браузері.
 

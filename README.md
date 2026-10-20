@@ -103,19 +103,20 @@ Known bugs (14):
 
 ```bash
 npm ci
+npm run install:browsers    # once: Playwright's Chromium
 cp .env.example .env        # add the two test accounts from the product README
 npm test                    # everything, about 3 minutes
 npm run test:smoke          # quick check that the site is up
 npm run test:api            # API tests
 npm run test:e2e            # browser tests
 npm run test:e2e:headed     # browser tests you can watch, slowed down
-npx playwright test --grep @known-bug   # status of every known bug
+npm run test:known-bugs     # status of every known bug
 npm run report              # HTML report
 ```
 
 **Notes:**
-- Use Node 22 (`.nvmrc`). On Node 26, Playwright's browser download and trace files hang, so traces are on only in CI. On Node 26 with the local Chrome the run can also stay open after the last test; all results are already printed, so press Ctrl+C.
-- Locally the browser tests use your installed Google Chrome. In CI they use Playwright's own Chromium.
+- Playwright 1.56 supports Node 18–24. If your Node is newer (for example 26), the npm scripts run Playwright on Node 22 automatically through `scripts/pw.mjs`, so nothing hangs and nothing needs to be installed. On Node 26, do not call `npx playwright` directly: browser install, trace files and the end of the run hang there.
+- Browser tests use Playwright's own Chromium. `PW_CHANNEL=chrome` switches to your installed Google Chrome.
 - **CI** (`.github/workflows/qa.yml`) runs in three steps: smoke + contract → API → browser. It runs on every push and every night. The test accounts are stored as GitHub secrets.
 
 ## 3. How I used AI

@@ -4,13 +4,15 @@
   "private": true,
   "description": "QA automation for the Virtual Data Room (API + contract + E2E, Playwright)",
   "scripts": {
-    "test": "playwright test",
-    "test:smoke": "playwright test --grep @smoke",
-    "test:api": "playwright test --project=api",
-    "test:e2e": "playwright test --project=e2e",
-    "report": "playwright show-report",
-    "typecheck": "tsc --noEmit",
-    "test:e2e:headed": "SLOW_MO=400 playwright test --project=e2e --headed --workers=1"
+    "test": "node scripts/pw.mjs test",
+    "test:smoke": "node scripts/pw.mjs test --grep @smoke",
+    "test:api": "node scripts/pw.mjs test --project=api",
+    "test:e2e": "node scripts/pw.mjs test --project=e2e",
+    "test:e2e:headed": "SLOW_MO=400 node scripts/pw.mjs test --project=e2e --headed --workers=1",
+    "test:known-bugs": "node scripts/pw.mjs test --grep @known-bug",
+    "install:browsers": "node scripts/pw.mjs install chromium",
+    "report": "node scripts/pw.mjs show-report",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
@@ -19,5 +21,8 @@
     "ajv-formats": "^3.0.1",
     "dotenv": "^17.2.3",
     "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=18 <25"
   }
 }

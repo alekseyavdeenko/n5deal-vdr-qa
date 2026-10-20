@@ -103,19 +103,20 @@ Known bugs (14):
 
 ```bash
 npm ci
+npm run install:browsers    # один раз: Chromium від Playwright
 cp .env.example .env        # додати два тестові акаунти з README продукту
 npm test                    # усе, приблизно 3 хвилини
 npm run test:smoke          # швидка перевірка, що сайт працює
 npm run test:api            # API-тести
 npm run test:e2e            # браузерні тести
 npm run test:e2e:headed     # браузерні тести, за якими можна стежити, сповільнені
-npx playwright test --grep @known-bug   # статус кожного відомого бага
+npm run test:known-bugs     # статус кожного відомого бага
 npm run report              # HTML-звіт
 ```
 
 **Примітки:**
-- Використовуй Node 22 (`.nvmrc`). На Node 26 завантаження браузера Playwright і trace-файли зависають, тому trace-файли увімкнені тільки в CI. На Node 26 з локальним Chrome прогін також може не закритися після останнього тесту; усі результати вже виведено, тож просто натисни Ctrl+C.
-- Локально браузерні тести використовують встановлений Google Chrome. У CI вони використовують власний Chromium від Playwright.
+- Playwright 1.56 підтримує Node 18–24. Якщо в тебе новіший Node (наприклад, 26), npm-скрипти самі запускають Playwright на Node 22 через `scripts/pw.mjs`, тож нічого не зависає і нічого не треба встановлювати. На Node 26 не запускай `npx playwright` напряму: там зависають встановлення браузера, trace-файли і кінець прогону.
+- Браузерні тести використовують Chromium від Playwright. `PW_CHANNEL=chrome` перемикає на встановлений Google Chrome.
 - **CI** (`.github/workflows/qa.yml`) працює в три кроки: smoke + контракт → API → браузер. Він запускається на кожен push і щоночі. Тестові акаунти зберігаються як GitHub secrets.
 
 ## 3. Як я використовував AI

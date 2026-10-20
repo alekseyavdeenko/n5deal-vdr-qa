@@ -21,11 +21,11 @@ There are 68 automated tests in 14 files. Every test has an ID at the start of i
 
 | You run | You get | Why |
 |---|---|---|
-| `npx playwright test` | **68** | everything |
-| `npx playwright test --project=api` | **60** | all tests without a browser: SMK + CON + AUTH + FOL + FIL + ACC + PUB + BUG |
-| `npx playwright test --project=api --grep @known-bug` | **15** | only BUG-01…BUG-15 |
-| `npx playwright test --project=e2e` | **8** | only E2E-01…E2E-08 |
-| `npx playwright test -g "FOL-03"` | **1** | one test by its ID |
+| `npm test` | **68** | everything |
+| `npm run test:api` | **60** | all tests without a browser: SMK + CON + AUTH + FOL + FIL + ACC + PUB + BUG |
+| `npm run test:api -- --grep @known-bug` | **15** | only BUG-01…BUG-15 |
+| `npm run test:e2e` | **8** | only E2E-01…E2E-08 |
+| `npm test -- -g "FOL-03"` | **1** | one test by its ID |
 
 Known bugs are tested by 18 tests in total: BUG-01…BUG-15 at API level, plus E2E-06…E2E-08 in the browser.
 

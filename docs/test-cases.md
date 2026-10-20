@@ -7,7 +7,7 @@ These are all the checks I ran on 2026-10-20 on the live site (commit `9c85149`)
 **Run:**
 - **M** = by hand in the browser. The owner and the second user were logged in at the same time in two browsers.
 - **X** = a direct request to the API.
-- **A** = an automated test, shown by its ID (for example `FOL-03`). What each ID checks and in which file it lives is listed in [autotests.md](autotests.md). Run one test by ID: `npx playwright test -g "FOL-03"`.
+- **A** = an automated test, shown by its ID (for example `FOL-03`). What each ID checks and in which file it lives is listed in [autotests.md](autotests.md). Run one test by ID: `npm test -- -g "FOL-03"`.
 
 **Status:**
 - ✅ works

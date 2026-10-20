@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 import { config } from './src/config';
 
+const NODE_MAJOR = Number(process.versions.node.split('.')[0]);
+
 /**
  * Two projects on one runner:
  *  - api: request-level tests (functional, access control, public links, contract) - the wide base of the pyramid
@@ -33,14 +35,13 @@ export default defineConfig({
       testMatch: /e2e\/.*\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
-        // Locally: the installed Google Chrome (no 150 MB download). CI: Playwright's bundled Chromium.
-        // Override with PW_CHANNEL=chromium (bundled) or PW_CHANNEL=msedge.
-        channel: process.env.PW_CHANNEL ?? (process.env.CI ? undefined : 'chrome'),
+        // Playwright's own Chromium (`npm run install:browsers`). PW_CHANNEL=chrome uses the installed Google Chrome.
+        channel: process.env.PW_CHANNEL,
         // SLOW_MO=400 slows every action down so a human can follow a headed run.
         launchOptions: { slowMo: Number(process.env.SLOW_MO ?? 0) },
         baseURL: config.webUrl,
-        // Trace archives hang on Node 26 (zip handling) - on by default only in CI (Node 22). Force with PW_TRACE=retain-on-failure.
-        trace: (process.env.PW_TRACE as 'off' | 'retain-on-failure' | undefined) ?? (process.env.CI ? 'retain-on-failure' : 'off'),
+        // Trace archives hang on Node 25+ (zip handling); scripts/pw.mjs runs Playwright on Node 22 there.
+        trace: NODE_MAJOR > 24 ? 'off' : 'retain-on-failure',
         screenshot: 'only-on-failure',
         video: 'retain-on-failure',
       },
