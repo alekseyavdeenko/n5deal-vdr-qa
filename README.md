@@ -8,10 +8,10 @@ This is my test assignment for N5Deal. I tested an existing product, the [Virtua
 | What | Where |
 |---|---|
 | Test plan | [docs/test-plan.md](docs/test-plan.md) |
-| All checks with expected and actual results (69) | [docs/test-cases.md](docs/test-cases.md) |
-| Bug report, by priority (21 bugs) | [docs/findings.md](docs/findings.md) |
+| All checks with expected and actual results (85, two rounds) | [docs/test-cases.md](docs/test-cases.md) |
+| Bug report, by priority (28 bugs) | [docs/findings.md](docs/findings.md) |
 | Final QA report: is it ready for release | [docs/qa-report.md](docs/qa-report.md) |
-| Automated tests: all 65 with IDs, files and what each checks | [docs/autotests.md](docs/autotests.md), code in [`tests/`](tests) and [`src/`](src) |
+| Automated tests: all 68 with IDs, files and what each checks | [docs/autotests.md](docs/autotests.md), code in [`tests/`](tests) and [`src/`](src) |
 | How I tested, how to run the tests, how I used AI | this page |
 
 ## Short result
@@ -22,9 +22,9 @@ This is my test assignment for N5Deal. I tested an existing product, the [Virtua
   - a public link shows only what was shared;
   - revoke works at once.
 - **Numbers:**
-  - 21 bugs: 1 high, 4 medium, 16 low priority;
-  - 69 checks;
-  - 65 automated tests.
+  - 28 bugs: 1 high, 5 medium, 22 low priority;
+  - 85 checks in two rounds;
+  - 68 automated tests.
 
 ## 1. How I tested
 1. **I started with the code.** The product is open source, so in the first hour I read the API documentation (32 endpoints), the access rules in the code and the existing tests. That gave me a list of places that might be broken. A place went into the bug report only after I reproduced it on the live site.
@@ -47,11 +47,11 @@ The site is a shared production that other candidates use too. So I did no load 
 **Tools:** Playwright + TypeScript for both API tests and browser tests, plus Ajv to compare API answers with the API documentation.
 
 ```
-          /\        Browser (6)     upload → view, public link → revoke,
-         /  \                       read-only view, login, F-10
+          /\        Browser (8)     upload → view, public link → revoke,
+         /  \                       read-only view, login, F-10, F-22, F-28
         /----\
-       / API  \     API (56)        smoke, login, folders, files, access rules,
-      /  tests \                    public links, 14 known bugs
+       / API  \     API (57)        smoke, login, folders, files, access rules,
+      /  tests \                    public links, 15 known bugs
      /----------\
     /  contract  \  (3 + every answer)  every API answer is compared with the API docs
    /--------------\

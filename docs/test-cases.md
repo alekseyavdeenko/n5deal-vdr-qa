@@ -113,20 +113,41 @@ These are all the checks I ran on 2026-10-20 on the live site (commit `9c85149`)
 | TC-91 | An empty folder | A clear empty state with buttons | "This folder is empty" + Upload / New folder | ✅ | M |
 | TC-92 | A narrow (phone) screen | Nothing goes off screen | The page fits; the table goes off screen when there is a long name | ⚠️ F-19 | M |
 
+## 7. Second round (re-checks and gaps)
+
+| ID | What I checked | Expected | Actual | Status | Run |
+|---|---|---|---|---|---|
+| TC-100 | Drag two PDFs and a `.txt` from Finder into the folder with a real mouse | PDFs are uploaded, the `.txt` is refused | As expected | ✅ | M |
+| TC-101 | Upload big files (12–45 MB) | Each file shows its own progress | Each file has its own moving progress bar (no percent number) | ✅ | M |
+| TC-102 | Move a file with the Move dialog into a folder 3 levels deep | The tree opens level by level; the file moves | As expected; the current folder is disabled; "moved" message | ✅ | M |
+| TC-103 | Rename with the dialog to a name that already exists | The extension stays; the conflict is explained | `.pdf` is locked; "Renamed to "big-30mb (1).pdf" to avoid a naming conflict" | ✅ | M |
+| TC-104 | The connection drops at the last step of an upload, then click Retry | Retry finishes the upload | "Upload failed with status 400" on every Retry; uploading again gives `retry-test (1).pdf` | ❌ F-22 | M, A: E2E-08 |
+| TC-105 | Share the whole data room with a user | The user sees all folders, read-only | Sees everything, cannot delete (404) | ✅ | X, M |
+| TC-106 | How a shared room looks in "Shared with me" | Its real name and who shared it | "My Data Room", no owner | ❌ F-23 | M |
+| TC-107 | Folders one inside another, 73 levels | Works, or a clear limit message | 72 levels work; level 73 → 500 | ❌ F-24 | X |
+| TC-108 | A data room named with spaces only (API) | Refused | Created with an empty name | ❌ F-25 | X |
+| TC-109 | A user with several data rooms | All rooms visible in "My data rooms" | Only the first room; others only by direct address | ❌ F-25 | X, M |
+| TC-110 | A public link, 3 levels deep | The path is shown; Back goes one level up | No path; Back goes to the top | ❌ F-26 | M |
+| TC-111 | Security headers and CORS | Framing blocked, no server info, other sites blocked | CORS is fine; framing is allowed; `X-Powered-By: Express` | ❌ F-27 | X, A: BUG-15 |
+| TC-112 | Open a folder link while logged out, then log in | That folder opens | The home page opens | ❌ F-28 | M, A: E2E-07 |
+| TC-113 | Sign out, then log in as another user in the same tab | No data of the previous user | Nothing of the previous user is shown | ✅ | M |
+| TC-114 | Keyboard: Tab to Download in "Shared with me", press Enter | Only the download starts | Only the download starts; no navigation | ✅ | M |
+| TC-115 | A normal double-click with a human hand on "Create public link" | One link | One link: the button is blocked after the first click | ✅ | M |
+
 ---
 
 ## Totals
-**69 checks.**
+**85 checks** (69 in the first round, 16 in the second).
 
 | Status | Count |
 |---|---|
-| ✅ Works | 44 |
-| ❌ Bug | 16 |
+| ✅ Works | 52 |
+| ❌ Bug | 24 |
 | ⚠️ Remark | 9 |
 
 **How they were run:**
-- 32 checks by hand;
-- 25 through the API;
-- 53 have an automated test.
+- 45 checks by hand;
+- 30 through the API;
+- 56 have an automated test.
 
 Many checks were done in more than one way.

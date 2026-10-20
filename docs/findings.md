@@ -2,7 +2,7 @@
 
 # Bug report — Virtual Data Room
 
-I tested the live version (commit `9c85149`) on 2026-10-20.
+I tested the live version (commit `9c85149`) on 2026-10-20, in two rounds. The second round re-checked every bug the way a normal user would hit it, and closed the gaps of the first round (real drag-and-drop, upload progress, the Move and Rename dialogs, sharing a whole room, log-in links).
 
 | | |
 |---|---|
@@ -18,10 +18,10 @@ I tested the live version (commit `9c85149`) on 2026-10-20.
 
 ## Summary
 
-21 bugs:
+28 bugs:
 - 1 high priority;
-- 4 medium priority;
-- 16 low priority.
+- 5 medium priority;
+- 22 low priority.
 
 There are also 3 design risks.
 
@@ -42,6 +42,7 @@ In "How to reproduce" the first word says where the bug happens: **UI** means an
 | F-10 | Several requests at the same moment create several public links for one folder. The Share window shows only one of them, so "Revoke public link" leaves the others working | **API**<br>1. Send `POST /shares` with `"mode": "PUBLIC_LINK"` for the same folder 3 times at the same moment.<br>2. `GET /shares?resourceType=FOLDER&resourceId=…` → 3 active links.<br>3. UI: Share → "Revoke public link" → the window now shows another link, and it still opens.<br>(A normal human double-click does not reproduce it; the button gets blocked.) | High | ✅ BUG-02, E2E-06 |
 | F-01 | If one upload contains two files with the same name, both keep that name, with no "(1)". This breaks the requirement "resolve name conflicts" | **UI**<br>1. Put two different files called `report.pdf` in two folders on your computer.<br>2. Drag both into one folder of the data room at once (or select both from a Finder search).<br>3. Both are listed as `report.pdf`, no "(1)". | Medium | ✅ BUG-01 |
 | F-03 | Names can contain invisible and "direction-flipping" characters. `invoice‮fdp.exe` is displayed as "invoiceexe.pdf", and two folders can look exactly the same | **UI**<br>1. New folder → paste the name `invoice‮fdp.exe` (it contains the hidden character U+202E) → Create.<br>2. The list shows "invoiceexe.pdf".<br>3. Create `case-1`, then `case-1` + an invisible zero-width space → both are accepted and look the same. | Medium | ✅ BUG-11 |
+| F-22 | If the internet drops at the very end of an upload, **Retry never works**: it always says "Upload failed with status 400". Uploading the file again gives `name (1).pdf`, because the stuck upload still holds the name (F-12) | **UI**<br>1. Start uploading a PDF.<br>2. The connection drops right when the upload finishes (for the test I cut the final "complete" request).<br>3. Click Retry → "Upload failed with status 400", every time.<br>4. Upload the same file again → it is saved as `name (1).pdf`. | Medium | ✅ E2E-08 |
 
 ### Low priority
 | ID | Bug | How to reproduce | Autotest |
@@ -62,6 +63,12 @@ In "How to reproduce" the first word says where the bug happens: **UI** means an
 | F-19 | On a phone-width screen, a long name without spaces makes the table wider than the screen, so the actions (⋮) are hidden. On a laptop it looks fine (checked at 1512 px) | **UI, phone**<br>1. Create a folder with a long name without spaces, e.g. `Due_Diligence_Financial_Statements_2023-2025_Audited`.<br>2. Open the room on a phone (or a 375 px wide window) → the ⋮ actions are off screen; you must scroll the table sideways. | no |
 | F-20 | The delete-folder warning does not say that the folder is shared with people or by link | **UI**<br>1. Share a folder with someone.<br>2. Click Delete for this folder → the warning lists the files but says nothing about the share. | no |
 | F-08 | Dates follow the browser language ("20 жовт. 2026 р.") while the rest of the UI is English | **UI**<br>1. Use a browser set to a non-English language (e.g. Ukrainian).<br>2. Open any folder → dates look like "20 жовт. 2026 р." in the English interface. | no |
+| F-23 | "Shared with me" does not say who shared an item. Every room is called "My Data Room" and cannot be renamed, so a room someone shared with you shows up as "My Data Room" | **UI**<br>1. The owner shares the whole room with a user.<br>2. The user opens "Shared with me" → sees "My Data Room", with no owner name. | no |
+| F-24 | Folders can be nested only 72 levels deep. Level 73 fails with a server error (500) instead of a clear message | **API** (or UI, folder inside folder)<br>1. Create folders one inside another.<br>2. Level 73 → 500 "Internal server error". | no |
+| F-25 | Data rooms: the API accepts a room name made only of spaces (saved as an empty name) and allows several rooms, but the UI shows only the first room. "My data rooms" opens just that one; other rooms open only by direct address; rooms cannot be renamed | **API + UI**<br>1. `POST /data-rooms {"name": "   "}` → 201, name `""`.<br>2. `POST /data-rooms {"name": "Project Phoenix"}` → 201.<br>3. UI: "My data rooms" shows only "My Data Room"; the other two open only by `/room/<id>`. | no |
+| F-26 | Inside a public link there is no path. Deep in the folders the visitor does not see where they are, and "Back" jumps to the top, not one level up | **UI**<br>1. Share a folder with subfolders by public link.<br>2. Open the link and go 3 levels deep.<br>3. No path and no folder name; "Back to <top folder>" returns to the top. | no |
+| F-27 | Missing security headers: any site can show the data room inside a frame (no `X-Frame-Options` / CSP), which allows clickjacking; the API tells everyone it runs "Express" | **API**<br>1. `curl -I https://virtual-data-room-ten.vercel.app` → no `X-Frame-Options`, no `Content-Security-Policy`.<br>2. `curl -I …railway.app/health` → `X-Powered-By: Express`. | ✅ BUG-15 |
+| F-28 | After logging in you always land on the home page, not on the link you opened | **UI**<br>1. While logged out, open a link to a folder.<br>2. You get the login page; log in.<br>3. You are on the home page, not in that folder. | ✅ E2E-07 |
 
 ### Design risks (not bugs, but need a decision)
 | ID | Risk |
@@ -84,7 +91,16 @@ All of this was checked, and most of it is covered by automated tests.
   - name conflicts get "(1)", "(2)" on upload, rename and move;
   - view and download work;
   - a download has the right file name.
-- **Uploading:** wrong types and files over 50 MB are rejected with a clear message.
+- **Uploading:**
+  - wrong types and files over 50 MB are rejected with a clear message;
+  - real drag-and-drop from the computer works (checked by hand);
+  - every file has its own progress bar.
+- **Move and Rename dialogs:** the folder tree works and the current folder is disabled; rename keeps `.pdf` and explains a name conflict ("Renamed to "big-30mb (1).pdf" to avoid a naming conflict").
+- **Sharing a whole room:** the recipient sees all folders, read-only.
+- **Fixed regressions from the product README:**
+  - Enter on a Download button only downloads;
+  - after sign-out and a new login, the previous user's data is not shown.
+- **CORS:** other sites cannot call the API.
 - **Security basics:**
   - HTML in names is shown as text, not run;
   - login gives the same message for a wrong password and an unknown email.
@@ -162,6 +178,24 @@ All of this was checked, and most of it is covered by automated tests.
 - the first name is displayed as "invoiceexe.pdf", although it really ends with ".exe";
 - two `case-1` folders look identical.
 
+### F-22 — Retry never finishes an upload after a network drop
+![F-22](evidence/F-22-retry-after-network-drop-fails-forever.jpg)
+
+**Steps:**
+1. Start uploading a PDF.
+2. Lose the connection right when the bytes are uploaded. For the test, I made the last request ("complete") fail with a network error.
+3. The panel shows "Error: Network Error". Click Retry.
+
+**Expected:** Retry finishes the upload.
+
+**Actual:**
+- "Upload failed with status 400", on every Retry.
+- The file stays invisible. Uploading it again gives `retry-test (1).pdf`, because the stuck upload still holds the name (F-12).
+
+**Why:** Retry uploads the file bytes again, but storage already has them and does not allow overwriting.
+
+**Why it matters:** on mobile or hotel Wi-Fi this happens. The user cannot finish the upload, and gets a confusing "(1)" name when trying again.
+
 ---
 
 ## Screenshots of low-priority bugs
@@ -195,6 +229,14 @@ All of this was checked, and most of it is covered by automated tests.
 **F-20 — the delete warning says "2 files" but not that this folder is shared with someone:**
 
 ![F-20](evidence/F-20-delete-dialog-silent-about-sharing.jpg)
+
+**F-23 — someone else's room appears as "My Data Room", with no owner:**
+
+![F-23](evidence/F-23-someone-elses-room-called-my-data-room.jpg)
+
+**F-26 — 3 levels deep in a public link: no path, and Back goes to the top:**
+
+![F-26](evidence/F-26-public-view-no-path-back-to-top.jpg)
 
 ## API proof for bugs you cannot see in the UI
 These are the real requests and answers from the live API on 2026-10-20. Ids are shortened.
@@ -236,6 +278,27 @@ GET /folders/{random id}/contents        → 404 {"message":"Folder not found"}
 PATCH /files/{id} {"name":"report.exe"}   → 200 {"name":"report.exe", "mimeType":"application/pdf"}
 ```
 
+**F-24 — folders 73 levels deep:**
+```
+POST /folders {"name":"L1"} … {"name":"L72", "parentId":"<L71>"}   → 201 each
+POST /folders {"name":"L73", "parentId":"<L72>"}                  → 500 {"message":"Internal server error"}
+```
+
+**F-25 — a room with a blank name, and rooms the UI never shows:**
+```
+POST /data-rooms {"name":"   "}              → 201 {"name":""}
+POST /data-rooms {"name":"Project Phoenix"}  → 201
+GET  /data-rooms                             → ["My Data Room", "", "Project Phoenix"]
+UI "My data rooms"                           → shows only "My Data Room"
+```
+
+**F-27 — security headers:**
+```
+GET https://virtual-data-room-ten.vercel.app/       → no X-Frame-Options, no Content-Security-Policy
+GET https://…railway.app/health                     → X-Powered-By: Express
+GET …/health with Origin: https://evil.example      → no Access-Control-Allow-Origin (CORS is fine)
+```
+
 **F-07 — the public link info shows the internal room id to anyone:**
 ```
 GET /public/{token}   (no login)
@@ -255,3 +318,11 @@ GET /public/{token}   (no login)
 **A revoked public link shows a clear page:**
 
 ![revoked link](evidence/OK-revoked-link-page.jpg)
+
+**Every file has its own progress bar (45 MB and 25 MB uploading at once):**
+
+![progress](evidence/OK-per-file-upload-progress.jpg)
+
+**Real drag-and-drop from Finder: the two PDFs are uploaded, the .txt file is refused:**
+
+![drag and drop](evidence/OK-drag-and-drop-by-hand.jpg)

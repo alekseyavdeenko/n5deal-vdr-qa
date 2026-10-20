@@ -2,7 +2,7 @@
 
 # Automated tests — catalog
 
-There are 65 automated tests in 13 files. Every test has an ID at the start of its name, for example `FOL-03`. The same ID is used in [test-cases.md](test-cases.md) and [findings.md](findings.md).
+There are 68 automated tests in 14 files. Every test has an ID at the start of its name, for example `FOL-03`. The same ID is used in [test-cases.md](test-cases.md) and [findings.md](findings.md).
 
 ## Where the tests are and where the numbers come from
 
@@ -15,19 +15,19 @@ There are 65 automated tests in 13 files. Every test has an ID at the start of i
 | Files | FIL | `tests/api/files.spec.ts` | 7 |
 | Access of the second user | ACC | `tests/api/access-control.spec.ts` | 9 |
 | Public links | PUB | `tests/api/public-links.spec.ts` | 7 |
-| Known bugs (expected to fail) | BUG | `tests/api/known-bugs.spec.ts` | 14 |
-| Browser tests | E2E | `tests/e2e/` (5 files) | 6 |
-| **Total** | | **13 files** | **65** |
+| Known bugs (expected to fail) | BUG | `tests/api/known-bugs.spec.ts` | 15 |
+| Browser tests | E2E | `tests/e2e/` (6 files) | 8 |
+| **Total** | | **14 files** | **68** |
 
 | You run | You get | Why |
 |---|---|---|
-| `npx playwright test` | **65** | everything |
-| `npx playwright test --project=api` | **59** | all tests without a browser: SMK + CON + AUTH + FOL + FIL + ACC + PUB + BUG |
-| `npx playwright test --project=api --grep @known-bug` | **14** | only BUG-01…BUG-14 |
-| `npx playwright test --project=e2e` | **6** | only E2E-01…E2E-06 |
+| `npx playwright test` | **68** | everything |
+| `npx playwright test --project=api` | **60** | all tests without a browser: SMK + CON + AUTH + FOL + FIL + ACC + PUB + BUG |
+| `npx playwright test --project=api --grep @known-bug` | **15** | only BUG-01…BUG-15 |
+| `npx playwright test --project=e2e` | **8** | only E2E-01…E2E-08 |
 | `npx playwright test -g "FOL-03"` | **1** | one test by its ID |
 
-Known bugs are tested 15 times in total: BUG-01…BUG-14 at API level, plus E2E-06 in the browser.
+Known bugs are tested by 18 tests in total: BUG-01…BUG-15 at API level, plus E2E-06…E2E-08 in the browser.
 
 ## All tests
 
@@ -123,6 +123,7 @@ Each test describes the *correct* behaviour, so today it fails on purpose. The r
 | BUG-12 | Rename keeps the `.pdf` extension | F-04 | TC-43 |
 | BUG-13 | Sharing with your own email is refused | F-05 | TC-60 |
 | BUG-14 | "Not yours" and "does not exist" give the same error | F-17 | TC-62 |
+| BUG-15 | The site cannot be shown inside a frame on other sites, and the API does not reveal its server | F-27 | TC-111 |
 
 ### E2E — browser tests (`tests/e2e/`)
 | ID | File | What it checks | Covers |
@@ -133,6 +134,8 @@ Each test describes the *correct* behaviour, so today it fails on purpose. The r
 | E2E-04 | `public-link-lifecycle.spec.ts` | Owner creates a link → a visitor opens it → owner revokes → visitor sees "revoked" | TC-70, TC-75 |
 | E2E-05 | `viewer-read-only.spec.ts` | The second user sees the folder without Upload / New folder / Share and without Rename / Move / Delete | TC-50, TC-51 |
 | E2E-06 | `known-bug-double-click-public-link.spec.ts` | A machine-speed double-click on "Create public link" gives one link (known bug, expected to fail) | F-10, TC-74 |
+| E2E-07 | `known-bugs-ui.spec.ts` | After login the user lands on the page they opened by link (known bug) | F-28, TC-112 |
+| E2E-08 | `known-bugs-ui.spec.ts` | Retry finishes an upload whose last step failed because of a network drop (known bug) | F-22, TC-104 |
 
 ## The framework code (`src/`)
 | File | What it is |

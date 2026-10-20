@@ -45,7 +45,9 @@ These are days of work, not weeks. Each fix already has an automated test that w
 - Then I tested by hand in six sessions, with the owner and the second user logged in at the same time.
 - For every bug I checked whether a normal user can hit it in the UI, or only through the API. This lowered the priority of 9 bugs.
 
-Details: [test-plan.md](test-plan.md), [test-cases.md](test-cases.md) (69 checks), [findings.md](findings.md).
+- A second round closed the gaps of the first: real drag-and-drop by hand, progress bars on big files, the Move and Rename dialogs, sharing a whole room, links after login, regressions named in the product README. It found 7 more bugs (F-22…F-28), all medium or low.
+
+Details: [test-plan.md](test-plan.md), [test-cases.md](test-cases.md) (85 checks), [findings.md](findings.md).
 
 **Not tested:**
 - load (shared production);
@@ -54,7 +56,7 @@ Details: [test-plan.md](test-plan.md), [test-cases.md](test-cases.md) (69 checks
 - accessibility.
 
 ## Main problems and risks
-**21 bugs:** 1 high, 4 medium and 16 low priority. There are also 3 design risks.
+**28 bugs:** 1 high, 5 medium and 22 low priority. There are also 3 design risks.
 
 They come from a few common causes:
 1. **No identity check** (F-21). Sign-up does not confirm the email, and sharing trusts the email.
@@ -71,21 +73,21 @@ They come from a few common causes:
 
 ## Automated tests
 
-**65 automated tests, about 3 minutes for the full run:**
+**68 automated tests, about 3 minutes for the full run:**
 - 50 check what works, and they pass;
-- 15 reproduce known bugs: they fail on purpose, and each fails for the right reason.
+- 18 reproduce known bugs: they fail on purpose, and each fails for the right reason.
 
 | Level | Tests | What it covers |
 |---|---|---|
 | Contract | 3 + every API answer | The live API documentation matches the saved copy, and every API answer in every test matches the documentation |
-| API | 56 | Smoke check, login, folders, files, access rules, public links, 14 known bugs |
-| Browser | 6 | Upload and view, public link → visitor → revoke, the second user sees read-only, login, F-10 |
+| API | 57 | Smoke check, login, folders, files, access rules, public links, 15 known bugs |
+| Browser | 8 | Upload and view, public link → visitor → revoke, the second user sees read-only, login, F-10, F-22, F-28 |
 
 **Not automated:**
 - **F-21:** the test would need to create new accounts on the shared production on every run;
 - **drag and drop:** the same upload is tested through the file picker;
 - **sharing a whole room:** on the shared demo account it would give the second user access to other people's data;
-- **F-15 and F-16.**
+- **F-15, F-16, F-23, F-24, F-25, F-26:** small UI issues, or tests that would leave data that cannot be deleted (rooms) on the shared production.
 
 **About the framework:**
 - it is safe for a shared site: own folder per run, deleted at the end;

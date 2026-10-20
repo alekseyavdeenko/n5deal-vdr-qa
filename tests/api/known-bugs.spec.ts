@@ -1,4 +1,5 @@
 import { putToSignedUrl } from '../../src/api/client';
+import { config } from '../../src/config';
 import { makePdf } from '../../src/data/factory';
 import { expect, test } from '../../src/fixtures';
 
@@ -110,5 +111,12 @@ test.describe('known bugs @known-bug', () => {
     const missing = await viewerApi.withoutContract().folderContents('11111111-1111-4111-8111-111111111111');
     void ownerApi;
     expect(forbidden.body).toEqual(missing.body);
+  });
+
+  test('BUG-15 the web app cannot be framed by other sites and the API hides its server stack', issue('F-27', 'no clickjacking protection on the web app; API sends X-Powered-By: Express'), async ({ request }) => {
+    const web = (await request.get(`${config.webUrl}/`)).headers();
+    const framingBlocked = Boolean(web['x-frame-options']) || /frame-ancestors/i.test(web['content-security-policy'] ?? '');
+    const api = (await request.get(`${config.apiUrl}/health`)).headers();
+    expect({ framingBlocked, poweredBy: api['x-powered-by'] ?? null }).toEqual({ framingBlocked: true, poweredBy: null });
   });
 });

@@ -2,7 +2,7 @@
 
 # Автотести — каталог
 
-Усього 65 автотестів у 13 файлах. Кожен тест має ID на початку назви, наприклад `FOL-03`. Ці самі ID вказані в [test-cases.uk.md](test-cases.uk.md) і [findings.uk.md](findings.uk.md).
+Усього 68 автотестів у 14 файлах. Кожен тест має ID на початку назви, наприклад `FOL-03`. Ці самі ID вказані в [test-cases.uk.md](test-cases.uk.md) і [findings.uk.md](findings.uk.md).
 
 ## Де лежать тести і звідки беруться числа
 
@@ -15,19 +15,19 @@
 | Файли | FIL | `tests/api/files.spec.ts` | 7 |
 | Доступ другого користувача | ACC | `tests/api/access-control.spec.ts` | 9 |
 | Публічні посилання | PUB | `tests/api/public-links.spec.ts` | 7 |
-| Відомі баги (очікувано падають) | BUG | `tests/api/known-bugs.spec.ts` | 14 |
-| Браузерні тести | E2E | `tests/e2e/` (5 файлів) | 6 |
-| **Разом** | | **13 файлів** | **65** |
+| Відомі баги (очікувано падають) | BUG | `tests/api/known-bugs.spec.ts` | 15 |
+| Браузерні тести | E2E | `tests/e2e/` (6 файлів) | 8 |
+| **Разом** | | **14 файлів** | **68** |
 
 | Запускаєш | Отримуєш | Чому |
 |---|---|---|
-| `npx playwright test` | **65** | усе |
-| `npx playwright test --project=api` | **59** | усі тести без браузера: SMK + CON + AUTH + FOL + FIL + ACC + PUB + BUG |
-| `npx playwright test --project=api --grep @known-bug` | **14** | тільки BUG-01…BUG-14 |
-| `npx playwright test --project=e2e` | **6** | тільки E2E-01…E2E-06 |
+| `npx playwright test` | **68** | усе |
+| `npx playwright test --project=api` | **60** | усі тести без браузера: SMK + CON + AUTH + FOL + FIL + ACC + PUB + BUG |
+| `npx playwright test --project=api --grep @known-bug` | **15** | тільки BUG-01…BUG-15 |
+| `npx playwright test --project=e2e` | **8** | тільки E2E-01…E2E-08 |
 | `npx playwright test -g "FOL-03"` | **1** | один тест за його ID |
 
-Відомі баги перевіряються загалом 15 тестами: BUG-01…BUG-14 на рівні API плюс E2E-06 у браузері.
+Відомі баги перевіряються загалом 18 тестами: BUG-01…BUG-15 на рівні API плюс E2E-06…E2E-08 у браузері.
 
 ## Усі тести
 
@@ -123,6 +123,7 @@
 | BUG-12 | Перейменування зберігає розширення `.pdf` | F-04 | TC-43 |
 | BUG-13 | Поділитися з власним email не можна | F-05 | TC-60 |
 | BUG-14 | «Не твоє» і «не існує» дають однакову помилку | F-17 | TC-62 |
+| BUG-15 | Сайт не можна показати у фреймі на чужому сайті, а API не розкриває свій сервер | F-27 | TC-111 |
 
 ### E2E — браузерні тести (`tests/e2e/`)
 | ID | Файл | Що перевіряє | Покриває |
@@ -133,6 +134,8 @@
 | E2E-04 | `public-link-lifecycle.spec.ts` | Власник створює посилання → відвідувач відкриває → власник відкликає → відвідувач бачить "revoked" | TC-70, TC-75 |
 | E2E-05 | `viewer-read-only.spec.ts` | Другий користувач бачить папку без Upload / New folder / Share і без Rename / Move / Delete | TC-50, TC-51 |
 | E2E-06 | `known-bug-double-click-public-link.spec.ts` | Машинний подвійний клік на "Create public link" дає одне посилання (відомий баг, очікувано падає) | F-10, TC-74 |
+| E2E-07 | `known-bugs-ui.spec.ts` | Після входу користувач потрапляє на сторінку, яку відкривав за посиланням (відомий баг) | F-28, TC-112 |
+| E2E-08 | `known-bugs-ui.spec.ts` | Retry завершує завантаження, останній крок якого впав через обрив мережі (відомий баг) | F-22, TC-104 |
 
 ## Код фреймворку (`src/`)
 | Файл | Що це |
