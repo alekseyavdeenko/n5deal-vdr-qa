@@ -1,0 +1,23 @@
+{
+  "name": "n5deal-vdr-qa",
+  "version": "1.0.0",
+  "private": true,
+  "description": "QA automation for the Virtual Data Room (API + contract + E2E, Playwright)",
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:api": "playwright test --project=api",
+    "test:e2e": "playwright test --project=e2e",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit",
+    "test:e2e:headed": "SLOW_MO=400 playwright test --project=e2e --headed --workers=1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^22.18.12",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "dotenv": "^17.2.3",
+    "typescript": "^5.9.3"
+  }
+}

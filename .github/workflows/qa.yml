@@ -1,0 +1,60 @@
+name: QA
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * *' # nightly regression against the deployed environment
+
+concurrency:
+  group: qa-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
+  OWNER_PASSWORD: ${{ secrets.OWNER_PASSWORD }}
+  VIEWER_EMAIL: ${{ secrets.VIEWER_EMAIL }}
+  VIEWER_PASSWORD: ${{ secrets.VIEWER_PASSWORD }}
+
+jobs:
+  # Fast gate: is the deployment up and does it still publish the contract we test against?
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npx playwright test --project=api --grep "@smoke|@contract"
+
+  api:
+    needs: smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx playwright test --project=api
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with: { name: api-report, path: playwright-report, retention-days: 14 }
+
+  e2e:
+    needs: api
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --project=e2e
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with: { name: e2e-report, path: playwright-report, retention-days: 14 }
