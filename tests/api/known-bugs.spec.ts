@@ -21,7 +21,7 @@ test.describe('known bugs @known-bug', () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
-  test('double-creating a public link yields one active link', issue('F-10', 'parallel create-link requests create several active tokens'), async ({ ownerApi, testFolder }) => {
+  test('double-creating a public link yields one active link', issue('F-10', 'parallel create-link requests create several active links; UI revoke closes only one'), async ({ ownerApi, testFolder }) => {
     const api = ownerApi.withoutContract();
     await Promise.all([1, 2, 3].map(() => api.sharePublic('FOLDER', testFolder.id)));
     const active = await api.listShares('FOLDER', testFolder.id, 'PUBLIC_LINK');

@@ -1,185 +1,160 @@
-# Findings — Virtual Data Room
+**English** · [Українська](findings.uk.md)
 
-**Tested build:** commit `9c85149` (2026-10-16) on production:
-- web: https://virtual-data-room-ten.vercel.app
-- API: https://virtual-data-room-production.up.railway.app
+# Bug report — Virtual Data Room
 
-**Accounts:** `john@example.com` (owner) and `viewer@example.com` (recipient), testing on 2026-10-20.
+I tested the live version (commit `9c85149`) on 2026-10-20.
 
-**Severity** is the impact on users or the business: Critical, High, Medium, Low. **Priority** is the fix order before release: High (blocker), Medium (next iteration), Low (backlog). Every finding was reproduced on the live system. Ones that have an automated reproduction are marked 🤖.
+| | |
+|---|---|
+| Site | https://virtual-data-room-ten.vercel.app |
+| API | https://virtual-data-room-production.up.railway.app |
+| Accounts used | the owner `john@example.com`, the second user `viewer@example.com`, and one new account I registered for F-21 |
+
+**How to read the scales:**
+- **Severity** is how much damage the bug does: Critical, High, Medium, Low.
+- **Priority** is how soon to fix it: High = before release, Medium = next iteration, Low = backlog.
+- **"How to hit it"** tells whether a normal user can hit the bug in the UI, or only someone who calls the API directly. I checked every bug for this, and it changed several priorities.
+- 🤖 means the bug has an automated test.
 
 ## Summary
 
-| | High priority | Medium | Low | Total |
+21 bugs:
+- 1 high priority;
+- 4 medium priority;
+- 16 low priority.
+
+There are also 3 design risks.
+
+**Most important (F-21):** if the owner shares a folder with an email that has no account yet, anyone who registers with that email first gets the folder. The app never checks that the person owns the email. I confirmed this end to end on the live site.
+
+## All bugs, by priority
+
+### High priority — fix before release
+| ID | Bug | How to hit it | Severity | 🤖 |
 |---|---|---|---|---|
-| Findings | 4 | 5 | 11 | **20** |
-| Design risks | | | | **4** |
-
-**The two that matter most:**
-- **F-10.** The owner can believe a public link is revoked while another copy of it still works. This breaks the core promise of a data room.
-- **F-02.** The server never checks what was actually uploaded, neither the content nor the size.
-
-## Prioritized list
-
-### High priority (fix before release)
-| ID | Area | Finding | Sev. | 🤖 |
-|---|---|---|---|---|
-| **F-10** | Sharing | A double-click on "Create public link" creates **2 active links**. The UI shows one, and "Revoke public link" revokes only that one, so the other keeps working | High | API + E2E |
-| **F-02** | Upload | File content and size are not verified server-side. Any bytes declared as `application/pdf` are stored and served as PDF, and the 50 MB limit applies only to the *declared* size | High | API |
-| **F-01** | Upload | Several files with the same name in one upload batch all keep that name (no `name (1).pdf`). This violates the task.md requirement "resolve name conflicts" | Medium | API |
-| **F-11** | Folders | No uniqueness under concurrency: 5–10 parallel "create folder X" requests create 5–10 folders named X | Medium | API |
+| **F-21** | Anyone can take a share meant for someone else: sign up with the invited email before that person does. No email check | UI, any visitor | **Critical** | — |
 
 ### Medium priority
-| ID | Area | Finding | Sev. | 🤖 |
+| ID | Bug | How to hit it | Severity | 🤖 |
 |---|---|---|---|---|
-| F-03 | Names | Bidi-override, zero-width and control characters are accepted in names. `invoice‮fdp.exe` renders as "invoiceexe.pdf", and `case-1` and `case-1​` look identical | Medium | API |
-| F-14 | API errors | Unhandled 500s in three places: a NUL character in a name; a parallel DELETE of the same file (1×204, 2×500); `complete` before the file reached storage | Medium | API |
-| F-12 | Upload | An abandoned upload reserves its name forever: the next `ghost.pdf` becomes `ghost (1).pdf` in a folder that looks empty | Medium | API |
-| F-13 | API | Unknown JSON fields are silently ignored. A typo `targetFolderID` moves the file to the **room root** with 200, and `parentID` creates a root folder | Medium | API |
-| F-16 | Sharing UX | A viewer with a single-file share opens the file and clicks Close (X). They land on "Folder not found", a dead end, and the parent folder id shows in the URL | Low | — |
+| F-02 | The server does not check the uploaded file. Any content renamed to `.pdf` is stored and shown as a PDF. The 50 MB limit only checks the size the client *says*, not the real size | Content: UI (rename any file to .pdf). Size: API only | High | API |
+| F-10 | Several requests at the same moment create several public links for one folder. The Share window shows only one of them, so "Revoke public link" leaves the others working | API, or a machine-speed double-click. A normal human double-click is blocked by the UI (checked by hand) | High | API + E2E |
+| F-01 | If one upload contains two files with the same name, both keep that name, with no "(1)". This breaks the requirement "resolve name conflicts" | UI: select or drop two files with the same name from different folders | Medium | API |
+| F-03 | Names can contain invisible and "direction-flipping" characters. `invoice‮fdp.exe` is displayed as "invoiceexe.pdf", and two folders can look exactly the same | UI (paste the name) and API | Medium | API |
 
 ### Low priority
-| ID | Area | Finding | 🤖 |
+| ID | Bug | How to hit it | 🤖 |
 |---|---|---|---|
-| F-04 | Files | The API lets a rename drop or change the `.pdf` extension (`report.exe`). The UI locks the extension, so only API clients are affected | API |
-| F-05 | Sharing | The owner can share an item with their own email, and it then shows in their own "Shared with me" | API |
-| F-17 | Security | The 404 message reveals whether an id exists: "Resource not found" (exists, forbidden) vs "Folder not found" (missing). The API docs promise these are indistinguishable | API |
-| F-07 | Sharing | The anonymous public-link summary exposes the internal `dataRoomId` | — |
-| F-06 | Upload UX | A 0-byte PDF fails with the raw validator text `size must not be less than 1` | — |
-| F-09 | Public link UX | The "Link not available" page offers a Retry button that can never succeed | — |
-| F-18 | Viewer | The embedded PDF viewer's title bar shows the storage UUID instead of the file name | — |
-| F-19 | Responsive | One long name without spaces stretches the table to 1838 px; on narrow screens Size, Modified and the row actions scroll out of view | — |
-| F-20 | Delete UX | The delete dialog doesn't mention that the folder is shared. Delete stays enabled when the preview request failed | — |
-| F-15 | Session | After Sign out in one tab, other open tabs keep showing the already-loaded folder list until the next action; the next click or a reload goes to /login, and no new data is fetched | — |
-| F-08 | i18n | Dates follow the browser locale (`20 жовт. 2026 р.`) inside an English-only UI | — |
+| F-11 | 5–10 requests at the same moment to create folder "X" create 5–10 folders "X" | API only. A double-click on "Create" in the UI makes one folder (checked) | API |
+| F-12 | An upload that never finished still "holds" its name. The next `ghost.pdf` becomes `ghost (1).pdf` in a folder that looks empty | UI: close the tab during an upload | API |
+| F-13 | Unknown fields in a request are ignored instead of rejected. A typo `targetFolderID` silently moves the file to the top level of the room | API only | API |
+| F-14 | Three cases return a server error (500) instead of a normal error: a NUL character in a name, deleting the same file twice at the same moment, and "complete upload" before the file was uploaded | API only | API |
+| F-04 | The API lets you rename `report.pdf` to `report.exe` or remove the extension. The UI does not allow it | API only | API |
+| F-05 | The owner can share a folder with their own email. It then appears in their own "Shared with me" | UI (checked) | API |
+| F-15 | After Sign out in one tab, other open tabs still show the old folder list. The first click or a refresh sends you to the login page, so no new data is shown | UI | — |
+| F-16 | A viewer opens a file shared with them, refreshes the page (F5) and clicks Close (X). They get "Data room not found" instead of going back. Without the refresh, Close works fine | UI | — |
+| F-17 | Error texts show whether an item exists: "Resource not found" means it exists but is not yours, "Folder not found" means it does not exist. The API docs promise they look the same | API | API |
+| F-07 | The public link info returns the internal room id to anonymous visitors | API | — |
+| F-06 | An empty (0 byte) PDF shows the raw technical message "size must not be less than 1" | UI | — |
+| F-09 | The "Link not available" page has a Retry button that can never help | UI | — |
+| F-18 | The built-in PDF viewer shows a technical id (`e247c0c7-…`) as the document title instead of the file name | UI | — |
+| F-19 | On a phone-width screen, a long name without spaces makes the table wider than the screen, so the actions (⋮) are hidden. On a laptop it looks fine (checked at 1512 px) | UI, narrow screen | — |
+| F-20 | The delete-folder warning does not say that the folder is shared with people or by link | UI | — |
+| F-08 | Dates follow the browser language ("20 жовт. 2026 р.") while the rest of the UI is English | UI | — |
 
-### Design risks (not bugs, but need a product decision)
-| ID | Risk | Evidence |
-|---|---|---|
-| **R-01** | **Email squatting.** A share to a not-yet-registered email activates when that email registers, and registration never verifies email ownership. Whoever registers `cfo@target.com` first receives everything shared with it. | Allowed live (share to an unregistered address → 201). The behaviour is stated in the API docs ("the share applies as soon as an account with this email exists") and in the code. |
-| R-02 | View and download URLs stay valid for up to 5 min after revoke or delete | A documented trade-off: a viewer who already opened a file keeps it briefly |
-| R-03 | The JWT lives in `localStorage` for 7 days and cannot be revoked. Logout does not invalidate it | Any XSS means account takeover. A stolen token works for a week |
-| R-04 | No rate limiting or lockout on login and registration, and registration returns 409 for existing emails | Code review (no throttler). Brute force and account enumeration are possible. Not load-tested on purpose: shared production |
+### Design risks (not bugs, but need a decision)
+| ID | Risk |
+|---|---|
+| R-02 | A file link that a viewer already opened keeps working for up to 5 minutes after access is revoked |
+| R-03 | The login token is valid for 7 days and is kept in the browser's localStorage. "Sign out" does not cancel it on the server. If the token is stolen, it works for a week |
+| R-04 | There is no limit on login or sign-up attempts, so passwords can be guessed by brute force. Sign-up also says "email already exists", so anyone can check which emails have accounts. Found in the code; I did not attack the live site |
 
-## Verified OK
-What a release decision can rely on. All of it is covered by the automated suite.
-- **Read-only sharing is enforced server-side.**
-  - A viewer gets 404 on all 12 mutation and share-management endpoints.
-  - No IDOR into the parent folder, sibling folders and files, the room, or breadcrumbs above the share.
-  - The viewer's breadcrumbs start at the shared folder, and the room name is hidden.
-- **Public links are scoped.**
-  - Parent, sibling and room-root requests, and files outside the link, all return 404.
-  - A file link opens only that file.
-  - Revoke → 410 "This link has been revoked" on every public endpoint.
-  - Re-share issues a new token, and the old one stays dead.
-  - Deleting the target kills the link.
-- **Revoke while the recipient is looking:** their next click shows "…you don't have access to it", and the item disappears from "Shared with me".
-- **Folders.**
-  - Case-insensitive and trimmed uniqueness (409), and the 200-character limit.
-  - Breadcrumbs and keyset pagination with no duplicates or gaps.
-  - The delete preview counts the whole subtree, the cascade delete works, and the dialog states exactly what will be lost.
-- **Files.**
-  - Sequential name conflicts get `(1)`, `(2)`, …, case-insensitively, on upload, rename and move.
-  - View and download work, with the download named after the file.
-  - Pending uploads are invisible.
-- **Upload UX.** Clear client-side rejection: "notes.txt is not a PDF", "big.pdf is larger than 50 MB". Per-file progress and status.
-- **Security basics.**
-  - HTML in names is escaped (no XSS).
-  - HTML uploaded as "PDF" is served as `text/plain` from the storage domain.
-  - A signed upload URL cannot overwrite an existing object.
-  - Login returns one generic error for a wrong password and for an unknown email.
-  - Forged or malformed tokens → 401.
+## What works well
+All of this was checked, and most of it is covered by automated tests.
+- **The viewer cannot change anything.** All 12 ways to change data return 404. The viewer also cannot open the owner's other folders and files by changing the id in the address (IDOR).
+- **A public link shows only what was shared.** You cannot reach the parent folder, sibling folders or other files with it.
+- **Revoke works at once.** The link says "This link has been revoked". If the viewer has the folder open, their next click shows "you don't have access".
+- **Folders:**
+  - duplicate names are blocked, ignoring capital letters and spaces;
+  - the 200-character limit works;
+  - the breadcrumbs (the path at the top) are correct;
+  - the delete warning shows how many folders and files will be deleted.
+- **Files:**
+  - name conflicts get "(1)", "(2)" on upload, rename and move;
+  - view and download work;
+  - a download has the right file name.
+- **Uploading:** wrong types and files over 50 MB are rejected with a clear message.
+- **Security basics:**
+  - HTML in names is shown as text, not run;
+  - login gives the same message for a wrong password and an unknown email.
 
 ---
 
-## Details (high and medium priority)
+## Details of high and medium bugs
 
-### F-10 — Several active public links; revoking in the UI leaves the others working
-![F-10](evidence/F-10-share-dialog-shows-one-of-six-active-links.jpg)
+### F-21 — Anyone can take a share meant for an unregistered email
+![F-21](evidence/F-21-squatter-receives-share-right-after-signup.jpg)
 
-**Steps (UI only):**
-1. As the owner, open Share for a folder.
-2. **Double-click** "Create public link" and copy the link.
-3. Click "Revoke public link".
+**Steps:**
+1. The owner shares the folder "Confidential - Financials 2026" with `cfo.n5qa6468@example.com`. No account exists for this email yet, and the app allows the share.
+2. Someone else opens Sign up and registers with exactly this email and any password.
+3. They open "Shared with me".
 
-**Expected:** one link per item. After revoke, the link no longer opens.
+**Expected:** the share reaches only the real owner of the email. For example, sign-up asks to confirm the email first, or a share to an unknown email is not allowed.
 
-**Actual:** the double-click sends two create requests, and 2 active links exist (`GET /shares`). The dialog shows only the newest. After "Revoke public link" it silently shows the other one, which keeps working. With 6 parallel requests: 6 links; revoking in the UI leaves 5 active.
+**Actual:** the account works right away, with no email confirmation. The confidential folder is already in "Shared with me" and opens.
 
-**Impact:** the owner believes access is revoked while a link already sent out still exposes the documents. "The owner can revoke access" is a core requirement in task.md.
+**Why it matters:** in a deal it is normal to invite people who have no account yet, such as lawyers or auditors of the buyer. Anyone who knows or guesses their work email can get the documents first.
 
-**Cause (source):** share de-duplication is `findFirst` followed by `create`, with no unique constraint or transaction. The UI fetches only `limit=1`.
-
-**Fix ideas:**
-- add a partial unique index (one active PUBLIC_LINK per resource);
-- disable the button while the request is pending;
-- make "Revoke" revoke all active links of the item.
-
-**Automated:** `tests/e2e/known-bug-double-click-public-link.spec.ts` and `tests/api/known-bugs.spec.ts`.
-
-### F-02 — Upload content and size are not verified server-side
+### F-02 — Uploaded files are not checked on the server
 ![F-02](evidence/F-02-F-18-fake-pdf-in-viewer-uuid-title.jpg)
 
-**Steps:** upload `fake.pdf`, declared `application/pdf`, with content `MZ… not a pdf` (through the web app or the API).
+**Steps:** rename any non-PDF file to `something.pdf` and upload it.
 
-**Expected:** the upload is rejected, for example by checking the `%PDF-` magic bytes and the stored size when `complete` is called.
+**Expected:** the server checks that the file really is a PDF (it starts with `%PDF-`) and checks its real size.
 
 **Actual:**
-- **Content.** The file is stored, listed and served as `application/pdf`. The viewer then shows "Failed to load PDF document".
-- **Size.** An intent declaring 10 B followed by a 3 015 B upload is accepted and stored as 3 015 B, so the 50 MB limit is bypassable by any API client.
+- The file is saved and shown as a PDF. Viewers get "Failed to load PDF document".
+- With the API you can also say "the file is 10 bytes" and then upload a bigger one. It is saved with its real size, so the 50 MB limit does not protect anything.
 
-**Impact:** arbitrary files, including executables, can be distributed through a trusted-looking data room entry, also via public links. Combined with F-03 or F-04, the name can be spoofed as well.
+**Why it matters:**
+- A data room should only hold real documents.
+- Since anyone can sign up (see F-21), anyone can also fill the storage with big files.
 
-**Mitigating:** storage serves HTML as `text/plain`, so no stored XSS on the app origin.
+### F-10 — Two public links for one folder; Revoke closes only one
+![F-10](evidence/F-10-share-dialog-shows-one-of-six-active-links.jpg)
 
-### F-01 — Same-name files in one upload batch keep duplicate names
-**Steps:** Upload → select two files that are both named `report.pdf` (for example, from different local folders) → upload them together.
+**Steps:** send two "create public link" requests for the same folder at the same moment (an automated double-click, or a script). Then click "Revoke public link" in the Share window.
 
-**Expected:** the second becomes `report (1).pdf`, as for sequential uploads.
+**Expected:** one link per folder. After Revoke, no link works.
 
-**Actual:** both are stored as `report.pdf`. The web app runs up to 4 upload intents in parallel, and the name check is not atomic.
+**Actual:**
+- 2 links are created. The window shows one of them.
+- After Revoke, it quietly shows the second link, which still opens the folder.
+- With 6 requests at once: 6 links, and 5 still work after Revoke.
 
-**Impact:** two indistinguishable documents. The wrong one can be shared, moved or deleted.
+**How likely:** I clicked the button twice quickly by hand, and the UI blocked the second click. So a normal user will rarely hit this. It still matters because when it happens, the owner thinks access is closed and it is not.
 
-### F-11 — Duplicate folders under concurrency
-**Steps:** send 5–10 parallel `POST /folders` with the same name and parent. In the UI this happens with a double submit, or with two tabs or two people.
+**Fix idea:** allow only one active link per item in the database, and make Revoke close all of them.
 
-**Expected:** one 201, the rest 409.
+### F-01 — Same-name files in one upload are not renamed
+**Steps:** in one upload, select two files called `report.pdf` from different folders (or drag them together).
 
-**Actual:** every request gets 201, so 5–10 identical folders. There is no DB unique constraint on (room, parent, lower(name)).
+**Expected:** the second becomes `report (1).pdf`, the same as when you upload them one after another.
 
-### F-03 — Spoofing characters in names
+**Actual:** both are saved as `report.pdf`, and there is no way to tell them apart.
+
+### F-03 — Invisible and direction-flipping characters in names
 ![F-03](evidence/F-03-spoofed-names-and-duplicates.jpg)
 
-**Steps:** create a folder, or rename a file, to `invoice‮fdp.exe`, `case-1​`, `tab\there` or `line1\nline2`.
+**Steps:** create folders or files with these names:
+- `invoice` + the right-to-left mark (U+202E) + `fdp.exe`
+- `case-1` + an invisible zero-width space
+- names with a tab or a line break
 
-**Actual:** all are accepted. The RLO name displays as `invoiceexe.pdf`, and two `case-1` folders look identical.
+**Expected:** these characters are rejected or removed.
 
-**Expected:** reject control and bidi characters, and normalize Unicode (NFC + strip zero-width) before the uniqueness check.
-
-
-### F-14 — Unhandled 500 errors
-| Request | Actual | Expected |
-|---|---|---|
-| Folder name containing `\u0000` | 500 "Internal server error" | 400 validation error |
-| Two or three parallel `DELETE /files/:id` | 204 + 500 + 500 | 204 + 404 + 404 |
-| `POST /files/:id/complete` before the file reached storage | 500 "Could not verify the upload" | 400 "Upload did not finish" |
-
-### F-12 — An abandoned upload reserves its name
-**Steps:** start an upload of `ghost.pdf` and close the tab before it finishes (or call only `upload-intent`) → upload `ghost.pdf` again.
-
-**Actual:** the second upload becomes `ghost (1).pdf`, although the folder looks empty. Pending rows count in the conflict check and are never cleaned up.
-
-### F-13 — Unknown request fields are silently ignored
-**Steps:** `PATCH /files/:id/move` with `{"targetFolderID": "<folder>"}` (wrong case).
-
-**Actual:** 200, and the file is moved to the **room root**. `POST /folders` with `parentID` creates a root folder. The cause is `ValidationPipe` with `whitelist` but no `forbidNonWhitelisted`.
-
-**Impact:** any client bug or integration typo silently moves documents to the room root.
-
-### F-16 — Single-file share: Close leads to a dead end
-**Steps:** the owner shares one file (in a non-shared folder) with the viewer → the viewer opens it from "Shared with me" → clicks the X.
-
-**Actual:** "Folder not found. This folder does not exist, or you don't have access to it." The parent folder id is in the URL.
-
-**Expected:** Close returns to "Shared with me".
+**Actual:**
+- all of them are accepted;
+- the first name is displayed as "invoiceexe.pdf", although it really ends with ".exe";
+- two `case-1` folders look identical.

@@ -1,95 +1,116 @@
-# Test Plan — Virtual Data Room
+**English** · [Українська](test-plan.uk.md)
+
+# Test plan — Virtual Data Room
 
 | | |
 |---|---|
-| Product | [evo9/virtual-data-room](https://github.com/evo9/virtual-data-room), commit `9c85149` (2026-10-16) |
-| Environments | Web https://virtual-data-room-ten.vercel.app · API https://virtual-data-room-production.up.railway.app (Swagger `/docs`) |
-| Requirements | Original assignment `task.md` + product README + published OpenAPI spec |
-| Time box | 24 h, one QA engineer + AI assistance |
+| Product | [evo9/virtual-data-room](https://github.com/evo9/virtual-data-room), commit `9c85149` |
+| Where | Site https://virtual-data-room-ten.vercel.app, API https://virtual-data-room-production.up.railway.app |
+| Requirements | `task.md` in the product repo, the product README and the API documentation (`/docs`) |
+| Time | 24 hours, one tester, with AI help |
 
 ## 1. Goal
-Decide whether the MVP is safe to put in front of a real due-diligence customer. A data room is mostly about **one promise**: only the right people see the documents, and the owner can take access away. So the plan spends most of the effort on access control, sharing and revocation. Breadth comes after that.
+Find out if this product can be given to a real customer for a company deal.
 
-## 2. Scope
+A data room has one main job: only the right people see the documents, and the owner can take access away. So I spent most of the time on sharing and access, and less on everything else.
 
-**In scope.** All functional requirements of `task.md`:
-- auth;
-- folders: create, nest, rename, delete with warning, breadcrumbs;
-- files: multi-upload, drag-and-drop, progress, view, rename with conflict resolution, move, delete;
-- sharing: room / folder / file, public link and per-user, read-only, revoke.
+## 2. What I test and what I don't
 
-On top of that: error and empty states, API contract and validation, basic security checks (IDOR, scope escape, input handling), and concurrency on create and share.
+**I test** everything from `task.md`:
+- login and sign-up;
+- folders: create, nest, rename, delete with a warning, breadcrumbs;
+- files: upload several at once, view, rename, move, delete;
+- sharing: a whole room, a folder or one file, by public link or with a specific person, and revoke.
 
-**Out of scope.** Load and stress testing, because this is a shared production deployment that other candidates use at the same time. Also out of scope: penetration testing beyond functional authorization checks, cross-browser matrix (Chromium only, plus one narrow-viewport pass), accessibility audit, and email delivery (the product has none).
+**I also test:**
+- errors and empty states;
+- the API;
+- basic security: can someone open what is not theirs;
+- what happens when two actions happen at the same moment.
 
-## 3. Approach
-- **Risk-based and gray-box.** The source code is public, so I read it first: endpoints, guards, validation, access resolution. The output is a risk map; each hypothesis is then confirmed or refuted on the live system. Code review alone is never treated as a confirmed bug.
-- **Exploratory sessions by charter.** Each charter has a time box and notes. Findings are logged straight into `findings.md` with steps, expected vs actual result, impact, severity and priority.
-- **Two real sessions at once.** Owner (`john@example.com`) and recipient (`viewer@example.com`) run in separate browsers. This is how "revoke while viewing" and read-only behaviour are checked.
-- **Automation** goes to the scenarios where a regression would cost the most and that are stable to run against a shared environment (section 6).
+**I don't test, and why:**
+- **Load and stress:** the site is a shared production that other candidates use right now.
+- **Real hacking:** brute force and attacks are out of scope; I only check the rules.
+- **Many browsers:** Chrome only.
+- **Accessibility:** no time in 24 h.
 
-## 4. Risk map and priorities
+## 3. How I test
+1. **First I read the code and the API docs** (about 1 hour). The product is open source, so I listed all 32 API endpoints, the access rules and the existing tests. This gave me a list of places that *might* be broken. Nothing goes into the bug report until I reproduce it on the live site.
+2. **Then I test by hand, area by area** (the list is below). The owner and the second user are logged in at the same time in two browsers, so I can see what the other person sees.
+3. **For every bug I check how a real user would hit it.** Some bugs only happen through the API, or only after a refresh. Then I give them a lower priority. For example, F-10 went from High to Medium after I tried a normal double-click by hand.
+4. **I automate the most important checks**, plus a test for every confirmed bug.
 
-| # | Risk area | Why it matters | Likelihood | Impact | Priority |
-|---|---|---|---|---|---|
-| R1 | Access control: viewer read-only, no IDOR, share scope | Data leak between parties of a deal | Medium | Critical | **P1** |
-| R2 | Revocation and public links: revoke really ends access, link scope cannot be escaped | The owner's main safety lever | Medium | Critical | **P1** |
-| R3 | Upload integrity: PDF-only, size, content, names | Wrong or malicious files in a trusted room | High | High | **P1** |
-| R4 | Concurrency: duplicate names, duplicate links | Inconsistent data, hidden extra access | High | High | **P2** |
-| R5 | Folder operations: delete warning, cascade, breadcrumbs, rename conflicts | Accidental loss of documents | Medium | High | **P2** |
-| R6 | Auth and session: login/logout, token lifetime, cross-tab state | Account misuse on shared machines | Medium | Medium | **P2** |
-| R7 | Error handling and API robustness: 4xx vs 5xx, validation messages | Confusing UX, hidden failures | High | Medium | **P3** |
-| R8 | UX polish: empty states, long names, narrow screens, i18n | Perceived quality | Medium | Low | **P3** |
+## 4. Risk areas
+For each area I estimate two things:
+- **Likelihood:** how likely there are bugs there (based on how complex it is and what I saw in the code);
+- **Impact:** how bad a bug there would be for the customer.
 
-How to read the table:
-- **Likelihood** is how probable it is that this area hides defects. It is based on complexity and on what the code recon showed.
-- **Impact** is how bad a failure there would be for the customer.
-- **Priority** combines the two and sets the order of testing.
+The more of both, the earlier I test the area. Severity is a different thing: it is set later, for each bug found.
 
-Severity is a different scale: it is used later, for each bug that was actually found.
+| # | Area | Likelihood | Impact | Order |
+|---|---|---|---|---|
+| R1 | Access: the second user is read-only and cannot open what is not shared | Medium | Critical | 1 |
+| R2 | Public links and revoke | Medium | Critical | 1 |
+| R3 | Upload: only real PDFs, size limit, names | High | High | 1 |
+| R4 | Two actions at the same moment (duplicates) | High | High | 2 |
+| R5 | Folders: delete warning, nested delete, breadcrumbs | Medium | High | 2 |
+| R6 | Login, sign-up, logout | Medium | Medium | 2 |
+| R7 | Error messages and API errors | High | Medium | 3 |
+| R8 | Look and feel: long names, phone screen, language | Medium | Low | 3 |
 
-## 5. Test charters (exploratory)
-
-| Charter | Time box | Area |
+## 5. Test sessions (by hand)
+| Session | Time | What I look at |
 |---|---|---|
-| C1 Names and folders: limits, duplicates, Unicode, control characters, XSS | 30 min | R5, R7 |
-| C2 Upload: multi-file, same names, non-PDF, 0 B, > 50 MB, fake PDF, abandoned upload | 45 min | R3, R4 |
-| C3 Public links: scope escape (sibling, parent, room, foreign file), revoke, re-share, deleted target | 45 min | R2 |
-| C4 Viewer: read-only on every mutation endpoint, IDOR, breadcrumbs boundary, revoke while viewing, single-file share | 45 min | R1 |
-| C5 Concurrency: parallel creates, parallel links, parallel deletes | 30 min | R4 |
-| C6 UI and UX: dialogs, toasts, error and empty states, long names, narrow viewport, sign-out behaviour | 45 min | R6, R8 |
+| S1 Names and folders | 30 min | Limits, duplicates, special characters, HTML in names |
+| S2 Upload | 45 min | Several files, same names, not a PDF, empty file, over 50 MB, fake PDF, upload that never finished |
+| S3 Public links | 45 min | Escaping outside the shared folder, revoke, new link, deleted folder |
+| S4 The second user | 45 min | Read-only on every action, opening other ids, breadcrumbs, revoke while viewing, one shared file |
+| S5 Same moment | 30 min | Two creates, two links, two deletes at once |
+| S6 Interface | 45 min | Windows, messages, errors, long names, phone screen, sign-out in two tabs |
 
-## 6. Automation strategy (test pyramid)
+The result of every check is in [test-cases.md](test-cases.md), and the bugs are in [findings.md](findings.md).
+
+## 6. Automation plan (test pyramid)
 
 ```
-          /\        UI E2E (Playwright, few)          critical journeys only
-         /  \       owner upload→view · public link→revoke · viewer read-only
+          /\        Browser tests (few)      - only what needs the real UI
+         /  \       upload → view, public link → revoke, read-only view, login
         /----\
-       / API  \     API functional + access matrix (Playwright request)
-      / tests  \    auth · folders · files · sharing · public links · validation
+       / API  \     API tests (most)         - all rules: folders, files, access,
+      / tests  \                               links, + one test per confirmed bug
      /----------\
-    /  contract  \  every API response validated against the published OpenAPI spec
+    /  contract  \   every API answer is compared with the official API description
    /--------------\
-  / unit (product) \ owned by the dev team; 42 existing unit tests reviewed, gaps listed
+  /   unit tests   \  part of the product code - the developers' job
+ /------------------\ (I reviewed their 42 tests and listed what is missing)
 ```
 
-- **Why mostly API.** Access-control rules live in the API. API tests are fast and deterministic, and they need no rendering, so they can check the whole role × action matrix cheaply.
-- **Contract layer.** Every response the tests receive is validated against the live `/docs-json`. Contract drift (for example `Share.role` is in the README but not in the API) is caught for free.
-- **Few E2E.** E2E covers only what the API cannot prove: the UI really hides edit actions, a revoked link page is shown, and a PDF renders.
-- **Known bugs as `test.fail()`.** Each confirmed defect has a test that is expected to fail and links to its finding ID. The suite stays green while the bug exists and turns red the day the fix ships. That is the signal to remove the marker.
-- **Isolation on a shared environment.** Each run works only inside its own uniquely named sandbox folder (`qa-<runId>`), which is deleted in global teardown. Tests never touch other users' data. Concurrency checks use a handful of requests, not load.
+- **Most tests are API tests.** All access rules live in the API, and API tests are fast and stable.
+- **Few browser tests:** only what you can see only in the UI, for example hidden buttons and the revoked page.
+- **A test for every known bug.** It describes the *correct* behaviour and is marked "expected to fail". When the developers fix the bug, the test reports it.
+- **Safe for the shared site.** Each run creates its own folder and deletes it at the end. It never touches other people's data.
 
-## 7. Entry and exit criteria
-- **Entry:** both apps are reachable (`/health` 200), and the test accounts can log in.
-- **Exit:**
-  - every P1 and P2 charter is executed;
-  - every finding is triaged with severity and priority;
-  - the automated suite is green, with known bugs marked `test.fail`;
-  - the QA report gives a release-readiness verdict.
+## 7. When to start and when testing is done
+**Start:** the site and API are up, and the test accounts can log in.
 
-## 8. Severity / priority scale
-- **Severity.** Critical: data leak or loss with no workaround. High: core requirement broken or security weakness. Medium: requirement partly broken, or there is a workaround. Low: cosmetic or minor UX.
-- **Priority.** High: fix before release. Medium: fix in the next iteration. Low: backlog.
+**Done when:**
+- all sessions are finished;
+- every bug has a severity and a priority;
+- the automated tests pass (known bugs fail as expected);
+- the QA report says whether the product is ready.
 
-## 9. Deliverables
-`docs/test-plan.md` (this file) · `docs/test-cases.md` (68 executed test cases mapped to requirements) · `docs/findings.md` · `tests/` (automation framework) · `README.md` (approach, how to run, AI usage) · `docs/qa-report.md`.
+## 8. Severity and priority
+- **Severity:**
+  - Critical: data leak or loss with no workaround;
+  - High: a main requirement is broken, or a security weakness;
+  - Medium: partly broken, or there is a workaround;
+  - Low: cosmetic or small.
+- **Priority:** High = fix before release, Medium = next iteration, Low = backlog.
+
+## 9. What I deliver
+- this plan;
+- [test-cases.md](test-cases.md) (all checks with results);
+- [findings.md](findings.md) (bugs);
+- automated tests in `tests/`;
+- [README](../README.md) (how it works and how to run it);
+- [qa-report.md](qa-report.md) (final report).

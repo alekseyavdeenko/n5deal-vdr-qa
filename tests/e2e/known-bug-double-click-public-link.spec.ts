@@ -2,10 +2,11 @@ import { expect, test } from '../../src/ui/fixtures';
 import { ExplorerPage } from '../../src/ui/pages/explorer-page';
 
 /**
- * F-10 (docs/findings.md): the create-share endpoint is not safe against parallel requests, so a double
- * click on "Create public link" leaves two active links; revoking the one the UI shows leaves the other
- * working. Expected to fail until fixed - when it starts passing, Playwright flags it so the
- * test.fail() marker (and this file's @known-bug tag) can be removed.
+ * F-10 (docs/findings.md): the create-share endpoint is not safe against parallel requests. A machine-speed
+ * double click (both clicks before React re-renders) leaves two active links; revoking the one the UI shows
+ * leaves the other working. A human double-click is blocked by the disabled button (checked by hand), so
+ * this reproduces the race through the real UI rather than a typical user path.
+ * Expected to fail until fixed - when it starts passing, Playwright flags it and the marker can be removed.
  */
 test.describe('sharing @known-bug', () => {
   test(

@@ -1,133 +1,108 @@
+**English** · [Українська](README.uk.md)
+
 # QA of the Virtual Data Room
 
-Product QA assignment for N5Deal: test the existing [Virtual Data Room](https://github.com/evo9/virtual-data-room) (commit `9c85149`), report findings, and lay the foundation of a reusable automation framework.
+This is my test assignment for N5Deal. I tested an existing product, the [Virtual Data Room](https://github.com/evo9/virtual-data-room) (commit `9c85149`), reported the bugs I found, and started an automated test framework.
 
-| Deliverable | Where |
+## Documents
+| What | Where |
 |---|---|
 | Test plan | [docs/test-plan.md](docs/test-plan.md) |
-| Test cases + execution log (manual, exploratory, automated) | [docs/test-cases.md](docs/test-cases.md) |
-| Prioritized findings report | [docs/findings.md](docs/findings.md) |
-| Final QA report (release readiness) | [docs/qa-report.md](docs/qa-report.md) |
-| Automated tests and framework | [`src/`](src) + [`tests/`](tests), CI in [`.github/workflows/qa.yml`](.github/workflows/qa.yml) |
-| Testing approach | this README, section 1 |
-| AI usage | this README, section 4 |
+| All checks with expected and actual results (69) | [docs/test-cases.md](docs/test-cases.md) |
+| Bug report, by priority (21 bugs) | [docs/findings.md](docs/findings.md) |
+| Final QA report: is it ready for release | [docs/qa-report.md](docs/qa-report.md) |
+| Automated tests | [`tests/`](tests) and [`src/`](src) |
+| How I tested, how to run the tests, how I used AI | this page |
 
----
+## Short result
+- **Verdict: not ready yet.** One bug blocks the release.
+- **The blocking bug (F-21):** if the owner shares a folder with an email that has no account yet, anyone can sign up with that email first and get the documents. I confirmed it on the live site.
+- **The rest works well:**
+  - the second user cannot change anything;
+  - a public link shows only what was shared;
+  - revoke works at once.
+- **Numbers:**
+  - 21 bugs: 1 high, 4 medium, 16 low priority;
+  - 69 checks;
+  - 65 automated tests.
 
-## 1. Testing approach
-
-**Start from what a data room promises.** A data room exists so the right people see the documents and the owner can take access away. Almost all the risk sits in access control, sharing and revocation, so most of the effort went there. Breadth came second. The full risk map is in the test plan.
-
-1. **Gray-box recon (about 1 h).** The product is open source, so before clicking anything I mapped:
-   - all 32 endpoints from the live OpenAPI spec;
-   - the auth guard, validation rules and access-resolution logic in the code;
-   - the 42 existing unit tests and their gaps.
-
-   The output was a list of hypotheses, not bugs. A code smell counts as a finding only after it reproduces on the live system.
-2. **Exploratory testing by charters.** Six time-boxed charters:
+## 1. How I tested
+1. **I started with the code.** The product is open source, so in the first hour I read the API documentation (32 endpoints), the access rules in the code and the existing tests. That gave me a list of places that might be broken. A place went into the bug report only after I reproduced it on the live site.
+2. **I tested by hand, area by area:**
    - names and folders;
    - upload;
    - public links;
-   - viewer and IDOR;
-   - concurrency;
-   - UI and UX.
+   - the second user;
+   - two actions at the same moment;
+   - the interface.
 
-   Owner and recipient were logged in at the same time in two browsers, so "revoke while the other person is looking" was tested for real.
-3. **Prioritize by impact on the core promise.** Each finding gets severity (impact) and priority (fix order). The headline bug (F-10) is ranked first because it silently breaks revocation. Its count of HTTP calls doesn't matter.
-4. **Automate where a regression would hurt most.** Each confirmed defect also becomes an executable test, so the findings report is verifiable rather than only descriptive.
+   The owner and the second user were logged in at the same time in two browsers, so I could revoke access while the other person was looking at the folder.
+3. **I checked how a real user would hit each bug.** Some bugs only happen through the API, or after a page refresh. Those got a lower priority. For example, the "two public links" bug (F-10) looked very serious at first, but a normal double-click by hand is blocked by the interface, so it went down to medium.
+4. **I automated the most important checks.** Every confirmed bug also got its own test.
 
-The target is a **shared production deployment**, also used by other candidates at the same time. So there was no load testing, nothing outside my own sandbox folder was modified, and every automated run creates and deletes its own data.
+The site is a shared production that other candidates use too. So I did no load testing and never changed other people's data. All my test data lived in my own folders, which I deleted at the end.
 
-## 2. Automation framework
+## 2. Automated tests
 
-**Stack:** Playwright Test + TypeScript, used for both API and browser tests (one runner, one report), plus Ajv for contract validation.
+**Tools:** Playwright + TypeScript for both API tests and browser tests, plus Ajv to compare API answers with the API documentation.
 
 ```
-            ┌──────────────┐
-            │  UI E2E (6)  │  journeys only the UI can prove: upload→view, public link→revoke,
-            ├──────────────┤  viewer read-only, login, F-10 double-click
-            │  API (56)    │  smoke · auth · folders · files · access-control matrix ·
-            │              │  public links · 14 known-bug tests
-            ├──────────────┤
-            │ contract (3) │  live OpenAPI == committed snapshot; and EVERY API response in
-            │  + per-call  │  every test is validated against that spec
-            ├──────────────┤
-            │ unit (product)│ owned by the dev team - existing 42 reviewed, gaps listed in the QA report
-            └──────────────┘
+          /\        Browser (6)     upload → view, public link → revoke,
+         /  \                       read-only view, login, F-10
+        /----\
+       / API  \     API (56)        smoke, login, folders, files, access rules,
+      /  tests \                    public links, 14 known bugs
+     /----------\
+    /  contract  \  (3 + every answer)  every API answer is compared with the API docs
+   /--------------\
+  /  unit (devs)   \  part of the product; I reviewed their 42 tests
+ /------------------\
 ```
 
-### Design decisions
-- **API-heavy pyramid.** The authorization rules live in the API. API tests check the full role × action matrix in seconds and are deterministic. E2E covers only what the API cannot prove.
-- **Contract checking is built into the client.** `src/api/client.ts` validates every response against `docs/reference/openapi.json`, including the status code. A test fails if the API returns something its own docs don't describe. `tests/contract/spec-drift.spec.ts` fails when the deployed spec changes, so the snapshot is updated on purpose rather than drifting.
-- **Isolation on a shared environment.**
-  - `global-setup` creates one run folder `n5qa-<timestamp>-<id>`.
-  - Each test gets a fresh `testFolder` inside it.
-  - `global-teardown` deletes the run folder (cascade).
-  - Run folders left behind by crashed runs are swept after 2 h.
-  - No test touches anything else in the account.
-- **Known bugs as `test.fail()` with an `issue` annotation.** Each test is written as the *correct* behaviour.
-  - Today it fails, and the suite stays green.
-  - When the fix ships, Playwright reports "expected to fail but passed".
-  - A custom reporter (`src/reporters/known-bugs-reporter.ts`) prints, for every known bug, the assertion that failed. That proves it fails *for the right reason*, for example `F-10 … Expected length: 1 | Received length: 3`.
-- **Credentials only from `.env` / CI secrets, read lazily.**
-  - Suites that need no login (smoke, contract, public pages) run without them.
-  - Tests that need a role skip with a clear reason.
-  - E2E logs in by injecting the API token into `localStorage`, so the UI login form is tested once instead of on every test.
-- **Readable layers:**
-  - `ApiClient`, a typed method per endpoint that never throws on HTTP errors;
-  - fixtures (`ownerApi`, `viewerApi`, `anonApi`, `testFolder`, `ownerPage`, `viewerPage`, `anonPage`);
-  - page objects in `src/ui/pages`;
-  - a data factory (`uniqueName`, `makePdf`, which builds a valid PDF in memory, so no binary fixtures).
+**Main ideas:**
+- **Most tests are API tests.** All access rules live in the API, and API tests are fast and stable. Browser tests check only what you can see only in the UI.
+- **Every API answer is checked against the API documentation.** If the API returns something the documentation does not describe, the test fails. A separate test warns when the live documentation changes.
+- **Safe on a shared site:**
+  - each run creates its own folder `n5qa-<date>-<code>`;
+  - each test works in its own subfolder;
+  - everything is deleted at the end;
+  - folders left by a crashed run are removed after 2 hours.
+- **Known bugs are tests too.** Each one describes the *correct* behaviour and is marked "expected to fail", so the run stays green. When a fix ships, Playwright reports "expected to fail but passed". A small custom report prints why each known bug still fails, so we know it fails for the right reason, for example `F-10: Expected 1 link, received 3`.
+- **No passwords in the code.** They are read from `.env` or GitHub secrets. Tests that need a login are skipped when there is no `.env`.
 
-### Run it
+### How to run
 
 ```bash
 npm ci
-cp .env.example .env        # fill in the two test accounts from the product README
-npm test                    # everything (≈ 3 min)
-npm run test:smoke          # reachability + login, seconds
-npm run test:api            # API + contract layers
-npm run test:e2e            # browser journeys (local: installed Google Chrome; CI: bundled Chromium)
-npm run test:e2e:headed     # watch them run, slowed down
-npx playwright test --grep @known-bug   # status of every confirmed defect
+cp .env.example .env        # add the two test accounts from the product README
+npm test                    # everything, about 3 minutes
+npm run test:smoke          # quick check that the site is up
+npm run test:api            # API tests
+npm run test:e2e            # browser tests
+npm run test:e2e:headed     # browser tests you can watch, slowed down
+npx playwright test --grep @known-bug   # status of every known bug
 npm run report              # HTML report
 ```
 
-| Variable | Default | Purpose |
+**Notes:**
+- Use Node 22 (`.nvmrc`). On Node 26, Playwright's browser download and trace files hang, so traces are on only in CI.
+- Locally the browser tests use your installed Google Chrome. In CI they use Playwright's own Chromium.
+- **CI** (`.github/workflows/qa.yml`) runs in three steps: smoke + contract → API → browser. It runs on every push and every night. The test accounts are stored as GitHub secrets.
+
+## 3. How I used AI
+
+I worked with Claude Code: Claude Opus as the main assistant, plus Claude Sonnet helpers for separate tasks. I used it a lot, on purpose, and checked what it did.
+
+| What | What AI did | What I did |
 |---|---|---|
-| `KEEP_TEST_DATA` | unset | Set to `true` to skip teardown and inspect the data |
-| `CONTRACT_STRICT` | unset | Set to `false` to log contract violations instead of failing |
-| `PW_CHANNEL` | — | Choose the browser |
-| `API_URL`, `WEB_URL` | — | Point the suite at another environment |
+| Reading the code | A helper read the product code and listed the API, the access rules and 31 suspicious places | I treated these only as ideas. A bug went into the report only after it was reproduced on the live site |
+| Testing | Sent API requests and clicked through the UI in two browsers at once | I logged in to the test accounts (AI may not enter passwords), followed the testing and asked for extra checks. Example: after sign-out in one tab, I asked "what happens on refresh?", which showed F-15 is smaller than first written |
+| Re-checking the bugs | Re-tested each bug the way a normal user would hit it | I did the checks that need a real person: the human double-click for F-10, and signing up with someone else's invited email for F-21 |
+| Documents | Wrote the drafts | I reviewed them, asked for simpler language and set the final priorities |
+| Automation | Wrote the framework and the API tests; a helper wrote the browser tests | I ran every test on my machine, including the visible browser runs, and sent back the failures |
 
-**Requirements:** use Node 22 (`.nvmrc`). On Node 26, Playwright's zip handling hangs (browser install, trace archives), so traces are enabled only in CI.
-
-**CI** (`.github/workflows/qa.yml`) has three jobs: smoke + contract → API → E2E. It runs on push and PR, and nightly against the deployment. HTML reports are uploaded as artifacts. Credentials come from repository secrets.
-
-## 3. Results at a glance
-
-**Findings:** 20 findings and 4 design risks. Details in [docs/findings.md](docs/findings.md).
-- High priority: 4, among them F-10 (revocation can be bypassed) and F-02 (no file content or size validation).
-
-**Automated suite:** 65 tests.
-- 50 regression checks pass.
-- 15 known-bug tests reproduce their defect: 14 at API level and 1 in the UI.
-
-**Verdict:** not ready for a real due-diligence customer until F-10 and F-02 are fixed. The rest is in good shape. See [docs/qa-report.md](docs/qa-report.md).
-
-## 4. Where and how AI was used
-
-I worked with Claude Code (Opus 5.5 as the main session, plus Sonnet 5.5 sub-agents for scoped tasks). AI was used heavily, by choice. It was always steered and checked.
-
-| Activity | What AI did | What I did / how it was checked |
-|---|---|---|
-| Recon | A sub-agent read the product source and produced an endpoint map, the access rules and 31 "suspicious spots" with file:line references | Treated as hypotheses only. Every item in the findings report was reproduced on the live system; unconfirmed ones are labelled "from source review" |
-| Exploratory testing | Ran API probes in the logged-in browser session (validation edges, races, scope escapes) and drove the UI in two browsers at once | I logged in the test accounts (the AI is not allowed to enter passwords), followed the sessions live, and reviewed every finding against the product requirements |
-| Test plan, findings, report | Drafted the documents | Reviewed and edited by me; final severity and priority calls are mine |
-| Framework | Wrote the core (client, contract validation, fixtures, reporter) and the API specs; a sub-agent wrote the E2E page objects and specs | I ran every suite on my machine (including headed E2E runs) and fed the failures back |
-
-**Where the AI was wrong or needed correcting:**
-- **The task.** It first read the original product assignment (`task.md`) as something I had to *build*. The recruiter's message corrected the scope.
-- **"Bugs" from code reading.** Several items in the source review were not bugs. For example, the HTML-as-PDF stored-XSS idea does not reproduce, because storage serves the file as `text/plain`. They were kept out of the bug list.
-- **Tests that pass for the wrong reason.** A known-bug test marked `test.fail()` passes whenever it fails *for any reason*. This led to adding the known-bugs reporter, which shows the actual failing assertion.
-- **Tooling on Node 26.** The browser download and trace zipping hung. The workaround (system Chrome locally, traces only in CI) was confirmed by re-running.
+**Where AI was wrong:**
+- **The task itself.** At first it read the product's original assignment (`task.md`) as something I had to *build*. The recruiter's message corrected this.
+- **Ideas from reading the code that were not real bugs.** For example, it suspected that an HTML page uploaded as a PDF would run as a web page, but storage returns it as plain text. Ideas like this were not put in the report.
+- **Priorities that were too high.** The first draft rated F-10, F-02 and F-15 as more serious than they are. They were lowered after re-checking how a real user would hit them.
+- **Tests that pass for the wrong reason.** A test marked "expected to fail" passes whenever it fails, for any reason. This is why the custom known-bug report was added.

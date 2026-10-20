@@ -1,115 +1,116 @@
-# QA Report — Virtual Data Room
+**English** · [Українська](qa-report.uk.md)
 
-**Build:** commit `9c85149` (2026-10-16), production deployment · **Tested:** 2026-10-20 · **Time box:** 24 h
+# QA report — Virtual Data Room
 
-## Verdict: ❌ Not ready for a real due-diligence customer, but close
+**Version:** commit `9c85149`, live site · **Tested:** 2026-10-20 · **Time:** 24 hours
 
-The foundations are solid:
-- read-only sharing is enforced on the server;
-- link scope cannot be escaped;
-- revocation works;
-- core folder and file flows behave as specified.
+## Verdict: ❌ Not ready for a real customer yet, but close
 
-**Two defects break promises that a data room cannot afford to break.**
+**Most things work well:**
+- the second user really cannot change anything;
+- a public link cannot be used to reach other folders;
+- revoke works immediately;
+- folders and files behave as the requirements say.
 
-| Blocker | Why it blocks |
+**One bug blocks the release:**
+
+| Blocker | Why |
 |---|---|
-| **F-10** Revocation can be silently incomplete | A double-click creates two public links, and revoking in the UI kills only one. The owner thinks access is gone, but it isn't. |
-| **F-02** Uploads are not verified server-side | Any file can enter the room as a "PDF", and the 50 MB limit can be bypassed. |
+| **F-21:** anyone can take a share meant for someone else | The owner shares a folder with an email that has no account yet, which is normal when you invite a buyer's lawyer. Whoever signs up with that email first gets the documents, because the app never checks that the person owns the email. I confirmed this on the live site. |
 
-**Release when:**
-- F-10 and F-02 are fixed and their tests in `known-bugs` start passing;
-- F-01 and F-11 are fixed (both come from the same root cause: missing DB uniqueness constraints);
-- the product decides on R-01 (email verification, or not allowing shares to unregistered emails).
+**Can be released when:**
+1. F-21 is fixed: confirm the email at sign-up, or send an invitation link to that email.
+2. Ideally also F-02 and F-10 (medium):
+   - the server should check that an uploaded file is a real PDF of the stated size;
+   - one item should have only one public link, so Revoke closes everything.
 
-Each item takes days, not weeks, and every fix already has an automated test that will confirm it.
+These are days of work, not weeks. Each fix already has an automated test that will confirm it.
 
 ## What was tested
 
-| Area | Depth | Result |
+| Area | How deep | Result |
 |---|---|---|
-| Access control: viewer read-only, IDOR, breadcrumbs boundary | Deep: API matrix of 12 mutations + 7 escape attempts, plus UI | ✅ No leak found |
-| Public links: scope, revoke, re-share, deleted target | Deep: API + UI with anonymous browser | ✅ except **F-10** |
-| Upload: multi-file, conflicts, type and size limits, content, abandoned uploads | Deep | ❌ **F-02**, **F-01**, F-12 |
-| Folders: create, nest, rename, delete warning, cascade, breadcrumbs, pagination | Deep | ✅ except **F-11** (concurrency) |
+| Access: the second user is read-only and cannot open other items | Deep: API and UI, 12 ways to change data + 7 attempts to open other items | ✅ no leaks |
+| Public links: what is visible, revoke, new link, deleted folder | Deep: API and UI with a browser that is not logged in | ✅ except F-10 |
+| Sharing with a person | Deep, including an email that has no account | ❌ **F-21**, plus small: F-05, F-16 |
+| Upload: several files, same names, type, size, content | Deep | ❌ F-02, F-01, small: F-12 |
+| Folders: create, nest, rename, delete, breadcrumbs, pages | Deep | ✅ except F-11 (API only) |
 | Files: view, download, rename, move, delete | Medium | ✅ |
-| Input handling: Unicode, control characters, XSS, limits, unknown fields | Medium | ⚠️ F-03, F-13, F-14 |
-| Auth and session | Medium | ⚠️ F-15, R-03, R-04 |
-| UX: empty and error states, dialogs, toasts, narrow viewport | Light | ⚠️ minor: F-16, F-18, F-19, F-20 |
+| Special characters, errors, unknown fields | Medium | ⚠️ F-03, F-13, F-14 |
+| Login and session | Medium | ⚠️ F-15, R-03, R-04 |
+| Look and feel | Light | ⚠️ small: F-18, F-19, F-20 |
 
-**Method.**
-- Risk-based and gray-box: source and OpenAPI recon first, then 6 exploratory charters.
-- Owner and recipient were logged in at the same time in two browsers.
-- Every finding was reproduced on the live system.
-- See [test-plan.md](test-plan.md) and [findings.md](findings.md).
+**How:**
+- First I read the code and the API docs.
+- Then I tested by hand in six sessions, with the owner and the second user logged in at the same time.
+- For every bug I checked whether a normal user can hit it in the UI, or only through the API. This lowered the priority of 9 bugs.
 
-**Not tested, and why:**
-- **Load / performance:** shared production environment.
-- **Brute force / rate limits:** confirmed absent by code, not hammered live.
-- **Cross-browser:** Chromium only.
-- **Accessibility audit.**
-- **Email-squatting end to end (R-01):** would need registering accounts on someone else's production. The behaviour is documented by the API itself.
+Details: [test-plan.md](test-plan.md), [test-cases.md](test-cases.md) (69 checks), [findings.md](findings.md).
 
-## Key issues and risks
+**Not tested:**
+- load (shared production);
+- brute force (no limits, found in code, not attacked);
+- other browsers;
+- accessibility.
 
-**20 findings and 4 design risks.**
-- By priority: 4 high, 5 medium, 11 low.
-- By theme:
-  1. **Concurrency without DB constraints** (F-01, F-10, F-11, F-14). One root cause behind three of the four high-priority bugs: uniqueness is checked in code (`findFirst`, then `create`), not enforced by the database. **Recommendation:** unique and partial-unique indexes, plus disabled buttons while a request is pending.
-  2. **The server trusts the client** (F-02, F-04, F-13). Declared MIME type and size, extension, and unknown fields are accepted as sent.
-  3. **Names are not normalized** (F-03). Spoofing and invisible duplicates.
-  4. **Session model** (F-15, R-03, R-04). A token lives 7 days in localStorage and cannot be revoked, other tabs keep showing loaded data after logout until the next action, and there is no throttling.
-  5. **Sharing to unverified identities** (R-01). Email squatting.
+## Main problems and risks
+**21 bugs:** 1 high, 4 medium and 16 low priority. There are also 3 design risks.
 
-## Automated coverage
+They come from a few common causes:
+1. **No identity check** (F-21). Sign-up does not confirm the email, and sharing trusts the email.
+2. **The server trusts the client** (F-02, F-04, F-13):
+   - it accepts the file type and size the client states;
+   - it accepts any extension through the API;
+   - it ignores unknown fields.
+3. **Duplicates when two requests come at once** (F-01, F-10, F-11). The database has no rule that names or links must be unique, so the check fails under load. One fix (unique rules in the database) closes all three.
+4. **Names are not cleaned** (F-03): invisible and direction-flipping characters are allowed.
+5. **Session** (F-15, R-03, R-04):
+   - the token lives 7 days and cannot be cancelled;
+   - other tabs still show data after sign-out;
+   - there is no limit on login attempts.
 
-**65 automated tests:**
-- **50 regression checks:** they pass, so these behaviours are protected.
-- **15 known-bug reproductions:** they fail on purpose, each for the right reason.
+## Automated tests
 
-The full suite runs in about 3 minutes.
+**65 automated tests, about 3 minutes for the full run:**
+- 50 check what works, and they pass;
+- 15 reproduce known bugs: they fail on purpose, and each fails for the right reason.
 
-| Layer | Tests | What it protects |
+| Level | Tests | What it covers |
 |---|---|---|
-| Contract | 3 + every response | Live OpenAPI == snapshot. Every API response in every test is validated against the spec (status + body) |
-| API | 56 | Smoke, auth, folders, files, the access-control matrix, public links, and 14 known bugs |
-| E2E (browser) | 6 | Owner upload → view; public link → anonymous visitor → revoke; viewer read-only UI; login; F-10 via a real double-click |
+| Contract | 3 + every API answer | The live API documentation matches the saved copy, and every API answer in every test matches the documentation |
+| API | 56 | Smoke check, login, folders, files, access rules, public links, 14 known bugs |
+| Browser | 6 | Upload and view, public link → visitor → revoke, the second user sees read-only, login, F-10 |
 
-**Coverage map of the task.md requirements:**
-- every functional requirement has at least one automated check, with three exceptions:
-  - drag-and-drop: the same upload pipeline is covered through the file input;
-  - per-file progress: asserted only through the final "Done" state;
-  - sharing a whole data room: deliberately not automated here, because on the shared demo account a room share would expose other people's data to the viewer account. Folder and file sharing use the same access-resolution code;
-- every high- and medium-priority finding except F-16 has an automated reproduction.
+**Not automated:**
+- **F-21:** the test would need to create new accounts on the shared production on every run;
+- **drag and drop:** the same upload is tested through the file picker;
+- **sharing a whole room:** on the shared demo account it would give the second user access to other people's data;
+- **F-15 and F-16.**
 
-**Framework properties:**
-- runs safely against a shared environment (isolated run folders, auto-cleanup, sweep of crashed runs);
-- credentials only from `.env` or CI secrets;
-- known-bug tracking turns red automatically when a fix ships;
-- GitHub Actions pipeline: smoke → API → E2E, plus a nightly run.
+**About the framework:**
+- it is safe for a shared site: own folder per run, deleted at the end;
+- passwords come only from `.env` or CI secrets;
+- a custom report shows the status of every known bug;
+- GitHub Actions runs it on every push and every night.
 
 ## What to test or automate next
-
-1. **After the fixes:** the `@known-bug` tests are the acceptance tests. Remove `test.fail()` as each starts passing.
-2. **Product unit and integration tests (dev team).** Today: 42 unit tests with Prisma mocked, no web tests, no CI. Add, in this order:
-   - service-level tests against a real Postgres (Testcontainers): uniqueness under concurrency, cascade delete, `resolveName`;
-   - DTO validation tests;
-   - a minimal CI.
-3. **Security pass in a dedicated environment:**
-   - rate limiting and lockout once added;
-   - the R-01 squatting scenario end to end;
-   - storage bucket policy (size and MIME limits, CORS);
+1. **After the fixes:** the known-bug tests are the acceptance tests. Remove "expected to fail" when they pass. Add an automated test for F-21 in a separate test environment.
+2. **For developers:** today the product has 42 unit tests that do not use a real database, no frontend tests and no CI. Next, add:
+   - tests with a real database (unique names, delete, sharing);
+   - input validation tests;
+   - a simple CI.
+3. **Security, in a separate environment:**
+   - login attempt limits;
+   - storage settings (size and type limits);
    - security headers.
-4. **Scale (the README claims 100k files per room):**
-   - a seeded room with 100k files: listing latency, delete-preview and cascade-delete time;
-   - deep nesting (the `path` index limit is around 70 levels in theory).
-5. **More E2E:**
-   - drag-and-drop with a real DataTransfer;
-   - upload retry after a failed step (likely broken by `x-upsert:false`, per source);
-   - move dialog;
-   - narrow and mobile viewport;
-   - a second browser engine.
-6. **Exploratory follow-ups:**
-   - the "logout → next user sees cached data" regression the product README says was fixed;
-   - deep-link return after login;
-   - behaviour after token expiry.
+4. **Large data:** the product says one room can hold 100 000 files. Test the list speed, delete speed and very deep folders.
+5. **More browser tests:**
+   - real drag and drop;
+   - upload retry after an error;
+   - the move dialog;
+   - phone screen;
+   - Firefox and Safari.
+6. **More by hand:**
+   - after sign-out, the next user must not see the previous user's data (the product README says this was fixed);
+   - opening a link while logged out;
+   - what happens when the 7-day token expires.
