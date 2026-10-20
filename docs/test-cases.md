@@ -133,21 +133,22 @@ These are all the checks I ran on 2026-10-20 on the live site (commit `9c85149`)
 | TC-113 | Sign out, then log in as another user in the same tab | No data of the previous user | Nothing of the previous user is shown | ✅ | M |
 | TC-114 | Keyboard: Tab to Download in "Shared with me", press Enter | Only the download starts | Only the download starts; no navigation | ✅ | M |
 | TC-115 | A normal double-click with a human hand on "Create public link" | One link | One link: the button is blocked after the first click | ✅ | M |
+| TC-116 | Delete a folder with a subfolder and a file while the shared database is slow (3–4 s per request) | The folder is deleted | 500; the folder is still there. Seen once, in a full automated run | ❌ F-29 | A: PUB-06 |
 
 ---
 
 ## Totals
-**85 checks** (69 in the first round, 16 in the second).
+**86 checks** (69 in the first round, 17 in the second).
 
 | Status | Count |
 |---|---|
 | ✅ Works | 52 |
-| ❌ Bug | 24 |
+| ❌ Bug | 25 |
 | ⚠️ Remark | 9 |
 
 **How they were run:**
 - 45 checks by hand;
 - 30 through the API;
-- 56 have an automated test.
+- 57 have an automated test.
 
 Many checks were done in more than one way.

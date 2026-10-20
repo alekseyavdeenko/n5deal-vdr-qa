@@ -9,7 +9,7 @@ This is my test assignment for N5Deal. I tested an existing product, the [Virtua
 |---|---|
 | Test plan | [docs/test-plan.md](docs/test-plan.md) |
 | All checks with expected and actual results (85, two rounds) | [docs/test-cases.md](docs/test-cases.md) |
-| Bug report, by priority (28 bugs) | [docs/findings.md](docs/findings.md) |
+| Bug report, by priority (29 bugs) | [docs/findings.md](docs/findings.md) |
 | Final QA report: is it ready for release | [docs/qa-report.md](docs/qa-report.md) |
 | Automated tests: all 68 with IDs, files and what each checks | [docs/autotests.md](docs/autotests.md), code in [`tests/`](tests) and [`src/`](src) |
 | How I tested, how to run the tests, how I used AI | this page |
@@ -22,8 +22,8 @@ This is my test assignment for N5Deal. I tested an existing product, the [Virtua
   - a public link shows only what was shared;
   - revoke works at once.
 - **Numbers:**
-  - 28 bugs: 1 high, 5 medium, 22 low priority;
-  - 85 checks in two rounds;
+  - 29 bugs: 1 high, 6 medium, 22 low priority;
+  - 86 checks in two rounds;
   - 68 automated tests.
 
 ## 1. How I tested
@@ -38,7 +38,7 @@ This is my test assignment for N5Deal. I tested an existing product, the [Virtua
 
    The owner and the second user were logged in at the same time in two browsers, so I could revoke access while the other person was looking at the folder.
 3. **I checked how a real user would hit each bug.** Some bugs only happen through the API, or after a page refresh. Those got a lower priority. For example, the "two public links" bug (F-10) looked very serious at first, but a normal double-click by hand is blocked by the interface, so it went down to medium.
-4. **I automated the most important checks.** 14 of the 28 bugs also got their own test: all 5 medium-priority bugs and 9 low ones. The high-priority F-21 cannot be automated on the shared site (it would create a new account on every run); the other low ones are checked by hand. See the Autotest column in findings.
+4. **I automated the most important checks.** 14 of the 29 bugs also got their own test: 5 of the 6 medium-priority bugs and 9 low ones. The high-priority F-21 cannot be automated on the shared site (it would create a new account on every run). The medium F-29 appears only when the shared database is slow, so I cannot cause it on purpose; PUB-06 catches it when it happens. The other low ones are checked by hand. See the Autotest column in findings.
 
 The site is a shared production that other candidates use too. So I did no load testing and never changed other people's data. My test data lived in my own folders, and I deleted them at the end. Two things could not be cleaned up, because the product has no way to delete them: the extra account I registered to prove F-21 (`cfo.n5qa6468@example.com`, display name "Hacker"), and the two extra data rooms that account holds from the F-25 check. The whole-room share used for TC-105 was revoked right after the check.
 
@@ -115,7 +115,7 @@ Known bugs (18):
 npm ci
 npm run install:browsers    # once: Playwright's Chromium
 cp .env.example .env        # add the two test accounts from the product README
-npm test                    # everything, about 3 minutes
+npm test                    # everything, about 3 minutes (up to 8 when the shared database is slow)
 npm run test:smoke          # quick check that the site is up
 npm run test:api            # API tests
 npm run test:e2e            # browser tests

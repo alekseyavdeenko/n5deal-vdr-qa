@@ -86,9 +86,10 @@ test.describe('public links @security', () => {
     expect((await anonApi.publicSummary(share.token!)).status).toBe(410);
   });
 
-  test('PUB-06 deleting the shared folder kills the link', covers('TC-77'), async ({ ownerApi, anonApi }) => {
+  test('PUB-06 deleting the shared folder kills the link', covers('TC-77', 'TC-116'), async ({ ownerApi, anonApi }) => {
     const token = (await ownerApi.sharePublic('FOLDER', deal.id)).body.token!;
-    expect((await ownerApi.deleteFolder(deal.id)).status).toBe(204);
+    // A 500 here is the product bug F-29 (folder delete times out when the shared database is slow), not a test problem.
+    expect((await ownerApi.deleteFolder(deal.id)).status, 'delete the shared folder (500 = F-29)').toBe(204);
     expect((await anonApi.publicSummary(token)).status).toBe(404);
     expect((await anonApi.publicViewUrl(token, memo.id)).status).toBe(404);
   });

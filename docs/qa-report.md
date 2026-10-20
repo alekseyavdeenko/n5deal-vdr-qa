@@ -34,7 +34,7 @@ These are days of work, not weeks. Each fix already has an automated test that w
 | Public links: what is visible, revoke, new link, deleted folder | Deep: API and UI with a browser that is not logged in | ✅ except F-10 |
 | Sharing with a person | Deep, including an email that has no account | ❌ **F-21**, plus small: F-05, F-16 |
 | Upload: several files, same names, type, size, content | Deep | ❌ F-02, F-01, small: F-12 |
-| Folders: create, nest, rename, delete, breadcrumbs, pages | Deep | ✅ except F-11 (API only) |
+| Folders: create, nest, rename, delete, breadcrumbs, pages | Deep | ✅ except F-11 (API only) and F-29 (delete fails when the database is slow) |
 | Files: view, download, rename, move, delete | Medium | ✅ |
 | Special characters, errors, unknown fields | Medium | ⚠️ F-03, F-13, F-14 |
 | Login and session | Medium | ⚠️ F-15, R-02, R-03 |
@@ -46,16 +46,16 @@ These are days of work, not weeks. Each fix already has an automated test that w
 - For every bug I checked whether a normal user can hit it in the UI, or only through the API. This lowered the priority of 9 bugs: F-01, F-02, F-10, F-11, F-12, F-13, F-14, F-15 and F-16.
 - A second round closed the gaps of the first: real drag-and-drop by hand, progress bars on big files, the Move and Rename dialogs, sharing a whole room, links after login, regressions named in the product README. It found 7 more bugs (F-22…F-28), all medium or low.
 
-Details: [test-plan.md](test-plan.md), [test-cases.md](test-cases.md) (85 checks), [findings.md](findings.md).
+Details: [test-plan.md](test-plan.md), [test-cases.md](test-cases.md) (86 checks), [findings.md](findings.md).
 
 **Not tested:**
-- load (shared production). But normal use already showed slow answers: in my last run every database request took 3–4 s (R-04);
+- load (shared production). But normal use already showed slow answers: in my last run every database request took 3–4 s (R-04), and once a folder delete failed because of it (F-29);
 - brute force (no limits, found in code, not attacked);
 - other browsers;
 - accessibility.
 
 ## Main problems and risks
-**28 bugs:** 1 high, 5 medium and 22 low priority. There are also 4 design risks.
+**29 bugs:** 1 high, 6 medium and 22 low priority. There are also 4 design risks.
 
 They come from a few common causes:
 1. **No identity check** (F-21). Sign-up does not confirm the email, and sharing trusts the email.
@@ -69,10 +69,11 @@ They come from a few common causes:
    - the token lives 7 days and cannot be cancelled;
    - other tabs still show data after sign-out;
    - there is no limit on login attempts.
+6. **A busy database** (F-29, R-04): one database connection for all users, and a folder delete that must finish in 5 s. When the database is slow, the delete fails with a server error.
 
 ## Automated tests
 
-**68 automated tests, about 3 minutes for the full run:**
+**68 automated tests, about 3 minutes for the full run (up to 8 when the shared database is slow, R-04):**
 - 50 check what works, and they pass;
 - 18 reproduce known bugs: they fail on purpose, and each fails for the right reason.
 
@@ -86,6 +87,7 @@ They come from a few common causes:
 - **F-21:** the test would need to create new accounts on the shared production on every run;
 - **drag and drop:** the same upload is tested through the file picker;
 - **sharing a whole room:** on the shared demo account it would give the second user access to other people's data;
+- **F-29:** it needs a slow database, and making the database slow on purpose would be load testing on production. PUB-06 catches it when it happens;
 - **13 low-priority bugs are checked by hand only** (F-06, F-07, F-08, F-09, F-15, F-16, F-18, F-19, F-20, F-23, F-24, F-25, F-26): small UI issues, or tests that would leave data that cannot be deleted (rooms) on the shared production.
 
 **About the framework:**
@@ -104,7 +106,7 @@ They come from a few common causes:
    - login attempt limits;
    - storage settings (size and type limits);
    - security headers.
-4. **Large data:** the product README says it is designed for 100,000 files per room. Test the list speed, delete speed and very deep folders.
+4. **Large data:** the product README says it is designed for 100,000 files per room. Test the list speed, delete speed and very deep folders, and several users at the same time (R-04, F-29).
 5. **More browser tests:**
    - real drag and drop;
    - upload retry after an error;

@@ -110,7 +110,7 @@ Known bugs are tested by 18 tests in total: BUG-01…BUG-15 at API level, plus E
 | PUB-03 | A link to one file opens only that file | TC-72 |
 | PUB-04 | Creating a link twice returns the same link | TC-73 |
 | PUB-05 | A revoked link says "revoked"; a new link gets a new address | TC-75, TC-76 |
-| PUB-06 | Deleting the folder kills the link | TC-77 |
+| PUB-06 | Deleting the folder kills the link (a 500 here is F-29) | TC-77, TC-116 |
 | PUB-07 | A link that does not exist gives 404 | TC-78 |
 
 ### BUG — known bugs (`tests/api/known-bugs.spec.ts`)

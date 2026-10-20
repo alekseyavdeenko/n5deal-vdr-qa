@@ -18,9 +18,9 @@ I tested the live version (commit `9c85149`) on 2026-10-20, in two rounds. The s
 
 ## Summary
 
-28 bugs:
+29 bugs:
 - 1 high priority;
-- 5 medium priority;
+- 6 medium priority;
 - 22 low priority.
 
 There are also 4 design risks.
@@ -43,6 +43,7 @@ In "How to reproduce" the first word says where the bug happens: **UI** means an
 | F-01 | If one upload contains two files with the same name, both keep that name, with no "(1)". This breaks the requirement "resolve name conflicts" | **UI**<br>1. Put two different files called `report.pdf` in two folders on your computer.<br>2. Drag both into one folder of the data room at once (or select both from a Finder search).<br>3. Both are listed as `report.pdf`, no "(1)". | Medium | ✅ BUG-01 |
 | F-03 | Names can contain invisible and "direction-flipping" characters. `invoice‮fdp.exe` is displayed as "invoiceexe.pdf", and two folders can look exactly the same | **UI**<br>1. New folder → paste the name `invoice‮fdp.exe` (it contains the hidden character U+202E) → Create.<br>2. The list shows "invoiceexe.pdf".<br>3. Create `case-1`, then `case-1` + an invisible zero-width space → both are accepted and look the same. | Medium | ✅ BUG-11 |
 | F-22 | If the internet drops at the very end of an upload, **Retry never works**: it always says "Upload failed with status 400". Uploading the file again gives `name (1).pdf`, because the stuck upload still holds the name (F-12) | **UI**<br>1. Start uploading a PDF.<br>2. The connection drops right when the upload finishes (for the test I cut the final "complete" request).<br>3. Click Retry → "Upload failed with status 400", every time.<br>4. Upload the same file again → it is saved as `name (1).pdf`. | Medium | ✅ E2E-08 |
+| F-29 | Deleting a folder sometimes fails with a server error (500) when the site is busy. Nothing is deleted; trying again later works. Seen in my automated run, when the shared database was slow (R-04) | **API** (the UI sends the same request)<br>1. Use the site while the database is slow (in my case: the full test run on the shared site, 3–4 s per database request).<br>2. Delete a folder that has subfolders and files.<br>3. Sometimes → 500; the folder is still there. | Medium | no (seen in PUB-06) |
 
 ### Low priority
 | ID | Bug | How to reproduce | Autotest |
@@ -76,7 +77,7 @@ In "How to reproduce" the first word says where the bug happens: **UI** means an
 | R-01 | A file link that a viewer already opened keeps working for up to 5 minutes after access is revoked |
 | R-02 | The login token is valid for 7 days and is kept in the browser's localStorage. "Sign out" does not cancel it on the server. If the token is stolen, it works for a week |
 | R-03 | There is no limit on login or sign-up attempts, so passwords can be guessed by brute force. Sign-up also says "email already exists", so anyone can check which emails have accounts. Found in the code; I did not attack the live site |
-| R-04 | The API gets very slow when several people use it at the same time. During my last full run every database request took 3–4 s (normally about 0.3 s), while `/health` and file storage stayed fast. The product README says the database pool has a single connection (`connection_limit=1`), so users queue behind each other. I did not load-test (shared production); this is what normal use showed |
+| R-04 | The API gets very slow when several people use it at the same time. During my last full run every database request took 3–4 s (normally about 0.3 s), while `/health` and file storage stayed fast. The product README says the database pool has a single connection (`connection_limit=1`), so users queue behind each other. I did not load-test (shared production); this is what normal use showed. It already causes one bug: F-29 |
 
 ## What works well
 All of this was checked, and most of it is covered by automated tests.
@@ -198,6 +199,30 @@ The Share window shows one link. At that moment 6 links for this folder were act
 **Why:** Retry uploads the file bytes again, but storage already has them and does not allow overwriting.
 
 **Why it matters:** on mobile or hotel Wi-Fi this happens. The user cannot finish the upload, and gets a confusing "(1)" name when trying again.
+
+### F-29 — Deleting a folder fails with 500 when the database is slow
+**Where I saw it:** in my full automated run on 2026-10-20. At that time the shared database answered in 3–4 s per request (R-04). The test PUB-06 deletes a folder with a subfolder and a file inside:
+```
+DELETE /folders/{id}   → 500
+(test output: "DELETE /folders/{id} returned undocumented status 500 (documented: 204, 400, 401, 404)")
+```
+
+**Expected:** the folder is deleted (204), even when the server is busy. At worst, a clear "try again" message.
+
+**Actual:** a server error (500). The folder, everything inside it and its public link are still there. Nothing is half-deleted: the delete is cancelled as a whole.
+
+**Why (from the code):** I cannot see the server logs, but the code points to one cause.
+- `folders.service.ts` deletes the folder, its subfolders and its files in one database transaction (`prisma.$transaction(async (tx) => …)`).
+- By default Prisma gives such a transaction 2 s to get a database connection and 5 s to finish. The code does not change these limits.
+- The pool has only one database connection (`connection_limit=1`), and every query took 3–4 s in that run. The transaction needs 4 queries, so it runs out of time.
+- The product retries a query only when the connection is lost (errors P1001 and P1017), not after this timeout.
+- Sign-up (`auth.service.ts`) uses the same kind of transaction, so it can fail the same way. I did not see that happen.
+
+**How to fix:** give the transaction more time, or delete by path in one query, so no long transaction is needed. Also look at R-04: a pool of one connection makes every user wait for the others.
+
+**Why it matters:** in a real deal several people work in the data room at the same time. Then deleting a folder fails at random, and the message does not say what to do.
+
+**Why no own autotest:** the bug needs a slow database. Making the shared database slow on purpose would be load testing on production. PUB-06 catches it when it happens, and the cleanup after the run tries the delete again.
 
 ---
 
