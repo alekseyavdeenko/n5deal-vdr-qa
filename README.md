@@ -114,7 +114,7 @@ npm run report              # HTML report
 ```
 
 **Notes:**
-- Use Node 22 (`.nvmrc`). On Node 26, Playwright's browser download and trace files hang, so traces are on only in CI.
+- Use Node 22 (`.nvmrc`). On Node 26, Playwright's browser download and trace files hang, so traces are on only in CI. On Node 26 with the local Chrome the run can also stay open after the last test; all results are already printed, so press Ctrl+C.
 - Locally the browser tests use your installed Google Chrome. In CI they use Playwright's own Chromium.
 - **CI** (`.github/workflows/qa.yml`) runs in three steps: smoke + contract → API → browser. It runs on every push and every night. The test accounts are stored as GitHub secrets.
 
