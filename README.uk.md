@@ -8,7 +8,7 @@
 | Що | Де |
 |---|---|
 | Тест-план | [docs/test-plan.uk.md](docs/test-plan.uk.md) |
-| Усі перевірки з очікуваним і фактичним результатом (85, два раунди) | [docs/test-cases.uk.md](docs/test-cases.uk.md) |
+| Усі перевірки з очікуваним і фактичним результатом (86, два раунди) | [docs/test-cases.uk.md](docs/test-cases.uk.md) |
 | Звіт про баги, за пріоритетом (29 багів) | [docs/findings.uk.md](docs/findings.uk.md) |
 | Фінальний QA-звіт: чи готовий продукт до релізу | [docs/qa-report.uk.md](docs/qa-report.uk.md) |
 | Автотести: усі 68 з ID, файлами і тим, що перевіряє кожен | [docs/autotests.uk.md](docs/autotests.uk.md), код у [`tests/`](tests) і [`src/`](src) |

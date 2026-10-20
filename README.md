@@ -8,7 +8,7 @@ This is my test assignment for N5Deal. I tested an existing product, the [Virtua
 | What | Where |
 |---|---|
 | Test plan | [docs/test-plan.md](docs/test-plan.md) |
-| All checks with expected and actual results (85, two rounds) | [docs/test-cases.md](docs/test-cases.md) |
+| All checks with expected and actual results (86, two rounds) | [docs/test-cases.md](docs/test-cases.md) |
 | Bug report, by priority (29 bugs) | [docs/findings.md](docs/findings.md) |
 | Final QA report: is it ready for release | [docs/qa-report.md](docs/qa-report.md) |
 | Automated tests: all 68 with IDs, files and what each checks | [docs/autotests.md](docs/autotests.md), code in [`tests/`](tests) and [`src/`](src) |
