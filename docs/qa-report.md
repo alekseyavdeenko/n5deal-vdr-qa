@@ -94,7 +94,7 @@ They come from a few common causes:
 - it is safe for a shared site: own folder per run, deleted at the end;
 - passwords come only from `.env` or CI secrets;
 - a custom report shows the status of every known bug;
-- GitHub Actions runs it on every push and every night.
+- GitHub Actions runs it on every push and every night (it needs the test accounts as GitHub secrets).
 
 ## What to test or automate next
 1. **After the fixes:** the known-bug tests are the acceptance tests. Remove "expected to fail" when they pass. Add an automated test for F-21 in a separate test environment.

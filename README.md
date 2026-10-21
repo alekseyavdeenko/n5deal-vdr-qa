@@ -127,7 +127,7 @@ npm run report              # HTML report
 **Notes:**
 - Playwright 1.56 supports Node 18–24. If your Node is newer (for example 26), the npm scripts run Playwright on Node 22 automatically through `scripts/pw.mjs`, so nothing hangs. Node 22 is downloaded once by npx; nothing is installed system-wide. On Node 26, do not call `npx playwright` directly: browser install, trace files and the end of the run hang there.
 - Browser tests use Playwright's own Chromium. `PW_CHANNEL=chrome` switches to your installed Google Chrome.
-- **CI** (`.github/workflows/qa.yml`) runs in three steps: smoke + contract → API → browser. It runs on every push and every night. The test accounts are stored as GitHub secrets.
+- **CI** (`.github/workflows/qa.yml`) runs in three steps: smoke + contract → API → browser. It runs on every push and every night. It needs the two test accounts as GitHub secrets (`OWNER_EMAIL`, `OWNER_PASSWORD`, `VIEWER_EMAIL`, `VIEWER_PASSWORD`). Without them only the tests that need no login run, and the run shows a warning.
 
 ## 3. How I used AI
 

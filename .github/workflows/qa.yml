@@ -24,6 +24,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Warn when the test accounts are missing
+        if: ${{ env.OWNER_EMAIL == '' || env.VIEWER_EMAIL == '' }}
+        run: echo "::warning::No test accounts in GitHub secrets - tests that need a login are skipped. Add OWNER_EMAIL, OWNER_PASSWORD, VIEWER_EMAIL, VIEWER_PASSWORD."
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
