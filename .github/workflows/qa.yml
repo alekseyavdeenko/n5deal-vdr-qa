@@ -6,7 +6,9 @@ on:
   pull_request:
   workflow_dispatch:
   schedule:
-    - cron: '0 6 * * *' # nightly regression against the deployed environment
+    # Nightly regression against the deployed environment. Not on the hour: GitHub delays (or even drops)
+    # scheduled runs at the start of every hour, when the load is highest.
+    - cron: '17 3 * * *'
 
 concurrency:
   group: qa-${{ github.ref }}
