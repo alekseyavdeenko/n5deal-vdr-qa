@@ -8,7 +8,7 @@ on:
   schedule:
     # Nightly regression against the deployed environment. Not on the hour: GitHub delays (or even drops)
     # scheduled runs at the start of every hour, when the load is highest.
-    - cron: '17 3 * * *'
+    - cron: '20 3 * * *'
 
 concurrency:
   group: qa-${{ github.ref }}
